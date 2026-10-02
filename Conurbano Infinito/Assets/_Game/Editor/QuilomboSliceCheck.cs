@@ -52,16 +52,50 @@ public static class QuilomboSliceCheck
         GameHud hud = UnityEngine.Object.FindFirstObjectByType<GameHud>();
         WaveDirector waves = UnityEngine.Object.FindFirstObjectByType<WaveDirector>();
         QuilomboThresholdController thresholds = UnityEngine.Object.FindFirstObjectByType<QuilomboThresholdController>();
+        QuilomboManager placement = UnityEngine.Object.FindFirstObjectByType<QuilomboManager>();
         PlayerController player = UnityEngine.Object.FindFirstObjectByType<PlayerController>();
-        if (quilombo == null || zone == null || kiosk == null || hud == null || waves == null || thresholds == null || player == null)
+        if (quilombo == null || zone == null || kiosk == null || hud == null || waves == null || thresholds == null || placement == null || player == null)
             throw new Exception("Falta un componente del slice en Main.");
+
+        var placementFields = new SerializedObject(placement);
+        SerializedProperty points = placementFields.FindProperty("spawnPoints");
+        SerializedProperty elements = placementFields.FindProperty("elements");
+        float playerDistance = placementFields.FindProperty("minimumPlayerDistance").floatValue;
+        float elementDistance = placementFields.FindProperty("minimumElementDistance").floatValue;
+        if (points.arraySize < 8 ||
+            placementFields.FindProperty("playerSpawn").objectReferenceValue != player.transform ||
+            elements.arraySize < 2 ||
+            elements.GetArrayElementAtIndex(0).objectReferenceValue != zone ||
+            elements.GetArrayElementAtIndex(1).objectReferenceValue != kiosk)
+            throw new Exception("QuilomboManager no tiene los puntos, el jugador o los elementos configurados.");
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        for (int run = 0; run < 20; run++)
+        {
+            typeof(QuilomboManager).GetMethod("Start", flags).Invoke(placement, null);
+            if (Vector2.Distance(zone.transform.position, player.transform.position) < playerDistance ||
+                Vector2.Distance(kiosk.transform.position, player.transform.position) < playerDistance ||
+                Vector2.Distance(zone.transform.position, kiosk.transform.position) < elementDistance)
+                throw new Exception("Las zonas no respetan las distancias mínimas.");
+
+            bool zoneOnPoint = false;
+            bool kioskOnPoint = false;
+            for (int i = 0; i < points.arraySize; i++)
+            {
+                Transform point = points.GetArrayElementAtIndex(i).objectReferenceValue as Transform;
+                if (point == null) throw new Exception("Hay un spawn point vacío.");
+                zoneOnPoint |= Vector2.Distance(zone.transform.position, point.position) < 0.01f;
+                kioskOnPoint |= Vector2.Distance(kiosk.transform.position, point.position) < 0.01f;
+            }
+            if (!zoneOnPoint || !kioskOnPoint || zone.transform.position == kiosk.transform.position)
+                throw new Exception("Las zonas no quedaron en puntos distintos.");
+        }
 
         var zoneFields = new SerializedObject(zone);
         RiskZoneData data = zoneFields.FindProperty("data").objectReferenceValue as RiskZoneData;
         CircleCollider2D area = zone.GetComponent<CircleCollider2D>();
         if (data == null || data.RequiredDuration != 5f || data.QuilomboReward != 15f ||
             !Mathf.Approximately(data.DamageMultiplier, 1.2f) ||
-            !area.isTrigger || Vector2.Distance(zone.transform.position, player.transform.position) > 5f ||
+            !area.isTrigger ||
             zoneFields.FindProperty("quilombo").objectReferenceValue != quilombo ||
             new SerializedObject(hud).FindProperty("quilombo").objectReferenceValue != quilombo ||
             new SerializedObject(waves).FindProperty("quilombo").objectReferenceValue != quilombo ||
@@ -70,7 +104,6 @@ public static class QuilomboSliceCheck
             new SerializedObject(thresholds).FindProperty("hud").objectReferenceValue != hud)
             throw new Exception("La Parrilla, el HUD o WaveDirector no están configurados.");
 
-        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         // Edit Mode does not run this gameplay listener automatically.
         typeof(QuilomboThresholdController).GetMethod("OnEnable", flags).Invoke(thresholds, null);
         Collider2D playerCollider = player.GetComponent<Collider2D>();
