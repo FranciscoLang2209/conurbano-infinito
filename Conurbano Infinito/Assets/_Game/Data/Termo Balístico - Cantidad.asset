@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
+  m_Name: Termo Balístico - Cantidad
+  m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  displayName: Termo Balístico · Cantidad
+  description: +1 proyectil de esta arma.
+  icon: {fileID: 0}
+  maximumLevel: 2
+  effect: 7
+  amount: 1
+  targetWeapon: {fileID: 11400000, guid: 06025649deea45fd962e2c2c5a755b6a, type: 2}

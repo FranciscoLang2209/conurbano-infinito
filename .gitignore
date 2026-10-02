@@ -1,0 +1,24 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Ll]ogs/
+[Uu]serSettings/
+
+# Builds and generated reports
+[Bb]uild/
+[Bb]uilds/
+TestResults/
+
+# IDE and OS files
+.vs/
+.idea/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+.DS_Store
+
+# Crash reports
+sysinfo.txt

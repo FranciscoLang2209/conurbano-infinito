@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
+  m_Name: Zapatillas Flecha
+  m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  displayName: Zapatillas Flecha
+  description: +10% de velocidad de movimiento por nivel.
+  icon: {fileID: 0}
+  maximumLevel: 5
+  effect: 2
+  amount: 1.1

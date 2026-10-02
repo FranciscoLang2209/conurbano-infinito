@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b23bf9cbc3942fa83aed43ed818d392, type: 3}
+  m_Name: "Termo Bal\xEDstico"
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  pattern: 0
+  damage: 1
+  fireInterval: 0.8
+  projectileSpeed: 8
+  projectileCount: 1
+  pierce: 0
+  range: 6
+  spreadDegrees: 20
+  projectileSprite: {fileID: -743238501231017332, guid: 2925f5ffbec5241b9a6cebc588e25f48, type: 3}
+  projectileColor: {r: 1, g: 1, b: 1, a: 1}
+  projectileScale: {x: 0.2, y: 0.4}
