@@ -172,30 +172,33 @@ public sealed class GameManager : MonoBehaviour
         }
         GUI.depth = 0;
         Matrix4x4 previous = GameUi.Begin();
-        GameUi.Fill(new Rect(0, 0, GameUi.Width, GameUi.Height), new Color(0.09f, 0.14f, 0.17f, 0.84f));
+        GameUi.Overlay();
 
-        var panel = new Rect((GameUi.Width - 440) / 2f, (GameUi.Height - 320) / 2f, 440, 320);
+        float panelHeight = State == GameState.Paused ? 320f : 280f;
+        var panel = new Rect((GameUi.Width - 440) / 2f, (GameUi.Height - panelHeight) / 2f,
+            440, panelHeight);
         Color accent = State == GameState.Victory ? GameUi.Gold :
             State == GameState.Defeat ? GameUi.Red : GameUi.Cyan;
-        GameUi.Panel(panel, accent);
+        GameUi.Sign(panel, accent);
+        GameUi.Fill(new Rect(panel.x + 28, panel.y + 24, 384, 49), accent);
 
         string title = State == GameState.Paused ? "PAUSA" :
             State == GameState.Defeat ? "DERROTA" : "VICTORIA";
         string detail = State == GameState.Paused ? "La plaza te espera · Esc para volver" :
             State == GameState.Defeat ? "El Pibe cayó en la plaza" :
             $"Resististe {Mathf.FloorToInt(ElapsedSeconds) / 60:00}:{Mathf.FloorToInt(ElapsedSeconds) % 60:00}";
-        GameUi.Text(new Rect(panel.x + 20, panel.y + 22, 400, 52), title, 32,
-            GameUi.Cream, TextAnchor.MiddleCenter);
-        GameUi.Fill(new Rect(panel.x + 90, panel.y + 82, 260, 4), accent);
+        GameUi.Text(new Rect(panel.x + 20, panel.y + 21, 400, 52), title, 34,
+            GameUi.Ink, TextAnchor.MiddleCenter);
+        GameUi.Fill(new Rect(panel.x + 90, panel.y + 82, 260, 4), GameUi.Petrol);
         GameUi.Text(new Rect(panel.x + 25, panel.y + 96, 390, 35), detail, 18,
-            GameUi.Muted, TextAnchor.MiddleCenter);
+            GameUi.Ink, TextAnchor.MiddleCenter);
 
         if (State == GameState.Paused &&
-            GameUi.Button(new Rect(panel.x + 34, panel.y + 145, 372, 44), "CONTINUAR  ·  ESC"))
+            GameUi.Button(new Rect(panel.x + 34, panel.y + 145, 372, 44), "CONTINUAR", "ESC"))
             ContinueGame();
 
         float restartY = State == GameState.Paused ? 200f : 157f;
-        if (GameUi.Button(new Rect(panel.x + 34, panel.y + restartY, 372, 44), "REINICIAR  ·  R"))
+        if (GameUi.Button(new Rect(panel.x + 34, panel.y + restartY, 372, 44), "REINICIAR", "R"))
         {
             GUI.matrix = previous;
             RestartGame();
@@ -203,7 +206,7 @@ public sealed class GameManager : MonoBehaviour
         }
 
         float menuY = State == GameState.Paused ? 255f : 212f;
-        if (GameUi.Button(new Rect(panel.x + 34, panel.y + menuY, 372, 44), "MENÚ PRINCIPAL  ·  M"))
+        if (GameUi.Button(new Rect(panel.x + 34, panel.y + menuY, 372, 44), "MENÚ PRINCIPAL", "M"))
         {
             GUI.matrix = previous;
             ReturnToMenu();

@@ -27,11 +27,11 @@ public sealed class PerformanceOverlay : MonoBehaviour
     {
         GUI.depth = 30;
         Matrix4x4 previous = GameUi.Begin();
-        var panel = new Rect(GameUi.Width - 172, GameUi.Height - 65, 160, 53);
-        GameUi.Panel(panel, GameUi.Cyan);
-        GameUi.Text(new Rect(panel.x + 10, panel.y + 8, 140, 18), $"FPS  {fps}", 14, GameUi.Cream);
-        GameUi.Text(new Rect(panel.x + 10, panel.y + 26, 140, 18),
-            $"ENEMIGOS  {enemies}", 14, GameUi.Cream);
+        var panel = new Rect(GameUi.Width - 134, GameUi.Height - 53, 122, 41);
+        GameUi.Fill(panel, new Color(0.05f, 0.1f, 0.1f, 0.72f));
+        GameUi.Text(new Rect(panel.x + 6, panel.y + 3, 110, 16), $"FPS  {fps}", 11, GameUi.Cyan);
+        GameUi.Text(new Rect(panel.x + 6, panel.y + 20, 110, 16),
+            $"ENEMIGOS  {enemies}", 11, GameUi.Concrete);
         GUI.matrix = previous;
     }
 #endif
