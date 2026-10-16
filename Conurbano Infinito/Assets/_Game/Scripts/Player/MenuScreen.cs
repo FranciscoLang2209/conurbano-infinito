@@ -33,7 +33,7 @@ public sealed class MenuScreen : MonoBehaviour
         GameUi.Fill(new Rect(0, GameUi.Height - 64, GameUi.Width, 64), GameUi.Shadow);
         GameUi.Fill(new Rect(0, GameUi.Height - 68, GameUi.Width, 4), GameUi.Gold);
 
-        float height = showingCredits ? 330f : 400f;
+        float height = showingCredits ? 330f : 470f;
         var panel = new Rect((GameUi.Width - 500f) / 2f, (GameUi.Height - height) / 2f, 500f, height);
         GameUi.Sign(panel, GameUi.Gold);
 
@@ -53,7 +53,8 @@ public sealed class MenuScreen : MonoBehaviour
         GameUi.Text(new Rect(panel.x + 16, panel.y + 24, 468, 52),
             "CONURBANO INFINITO", 30, GameUi.Cream, TextAnchor.MiddleCenter);
         GameUi.Text(new Rect(panel.x + 32, panel.y + 79, 436, 34),
-            "Sobreviví 10 minutos en la plaza", 17, GameUi.Ink, TextAnchor.MiddleCenter);
+            $"Aguantá {GameManager.DefaultDurationSeconds / 60:0} minutos · La Jefa llega a los 3",
+            17, GameUi.Ink, TextAnchor.MiddleCenter);
         if (GameUi.Button(new Rect(panel.x + 60, panel.y + 130, 380, 46), "JUGAR", "ENTER")) Play();
         if (GameUi.Button(new Rect(panel.x + 60, panel.y + 187, 380, 46), "CRÉDITOS", "C"))
             showingCredits = true;
@@ -81,6 +82,12 @@ public sealed class MenuScreen : MonoBehaviour
             audioDirector.MasterVolume, 0f, 1f, GUIStyle.none, volumeThumb);
         GUI.color = previousColor;
         if (!Mathf.Approximately(volume, audioDirector.MasterVolume)) audioDirector.MasterVolume = volume;
+        GameUi.Text(new Rect(panel.x + 25, panel.y + 389, 450, 24),
+            "WASD / flechas · ataque automático · Esc pausa", 14,
+            GameUi.Ink, TextAnchor.MiddleCenter);
+        GameUi.Text(new Rect(panel.x + 25, panel.y + 417, 450, 35),
+            "Perro: esquivá de costado. Aerosol: atacá al descansar.", 14,
+            GameUi.Petrol, TextAnchor.MiddleCenter, true);
         GUI.matrix = previous;
     }
 }

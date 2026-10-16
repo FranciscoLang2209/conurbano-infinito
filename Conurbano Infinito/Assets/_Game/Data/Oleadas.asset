@@ -14,52 +14,62 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WaveData
   phases:
   - startSeconds: 0
+    title: "Conocé la plaza"
     spawnIntervalSeconds: 3
-    maximumAlive: 25
+    maximumAlive: 15
     enemies:
     - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
       weight: 1
-  - startSeconds: 120
+  - startSeconds: 30
+    title: "Se suman las palomas"
     spawnIntervalSeconds: 2.6
+    maximumAlive: 20
+    enemies:
+    - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
+      weight: 3
+    - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
+      weight: 1
+  - startSeconds: 60
+    title: "Perros: esquivá de costado"
+    spawnIntervalSeconds: 1.8
+    maximumAlive: 28
+    enemies:
+    - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
+      weight: 3
+    - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
+      weight: 2
+    - prefab: {fileID: 5760062812552525264, guid: a4f11f1c45e2e4cc7b607ec97fe87553, type: 3}
+      weight: 1
+  - startSeconds: 120
+    title: "Mezcla de enemigos"
+    spawnIntervalSeconds: 1.4
     maximumAlive: 35
     enemies:
     - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
-      weight: 3
-    - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
-      weight: 1
-  - startSeconds: 240
-    spawnIntervalSeconds: 1.8
-    maximumAlive: 45
-    enemies:
-    - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
-      weight: 3
+      weight: 2
     - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
       weight: 2
     - prefab: {fileID: 1451185801548183257, guid: a6e064ca9a784cf6bcd12bc0582b2003, type: 3}
       weight: 1
-  - startSeconds: 300
+    - prefab: {fileID: 5760062812552525264, guid: a4f11f1c45e2e4cc7b607ec97fe87553, type: 3}
+      weight: 1
+  - startSeconds: 180
+    title: "Llegó La Jefa"
     spawnIntervalSeconds: 2.2
-    maximumAlive: 50
+    maximumAlive: 30
     enemies:
     - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
       weight: 2
     - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
       weight: 2
     - prefab: {fileID: 1451185801548183257, guid: a6e064ca9a784cf6bcd12bc0582b2003, type: 3}
+      weight: 2
+    - prefab: {fileID: 5760062812552525264, guid: a4f11f1c45e2e4cc7b607ec97fe87553, type: 3}
       weight: 1
-  - startSeconds: 360
-    spawnIntervalSeconds: 1.7
-    maximumAlive: 65
-    enemies:
-    - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
-      weight: 2
-    - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
-      weight: 2
-    - prefab: {fileID: 1451185801548183257, guid: a6e064ca9a784cf6bcd12bc0582b2003, type: 3}
-      weight: 2
-  - startSeconds: 540
-    spawnIntervalSeconds: 0.65
-    maximumAlive: 90
+  - startSeconds: 210
+    title: "Últimos 30 segundos"
+    spawnIntervalSeconds: 1.1
+    maximumAlive: 40
     enemies:
     - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
       weight: 3
@@ -67,5 +77,7 @@ MonoBehaviour:
       weight: 2
     - prefab: {fileID: 1451185801548183257, guid: a6e064ca9a784cf6bcd12bc0582b2003, type: 3}
       weight: 2
-  bossSpawnSeconds: 300
+    - prefab: {fileID: 5760062812552525264, guid: a4f11f1c45e2e4cc7b607ec97fe87553, type: 3}
+      weight: 1
+  bossSpawnSeconds: 180
   bossPrefab: {fileID: 1451185801548183257, guid: 169d8f1aa34a4d3c987a178873c808ed, type: 3}

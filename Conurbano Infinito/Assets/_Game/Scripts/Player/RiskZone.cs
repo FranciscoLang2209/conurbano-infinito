@@ -11,6 +11,9 @@ public sealed class RiskZone : MonoBehaviour
 
     public ZoneState State { get; private set; }
     public float Progress { get; private set; }
+    public bool HasPendingReward => !rewardStarted;
+    public string DisplayName => data.DisplayName;
+    public Vector3 ViewportPosition => gameCamera.WorldToViewportPoint(transform.position);
 
     private bool playerInside;
     private PlayerController player;
@@ -104,13 +107,14 @@ public sealed class RiskZone : MonoBehaviour
         GUI.depth = 19;
         Matrix4x4 previous = GameUi.Begin();
         Vector3 screen = gameCamera.WorldToScreenPoint(transform.position + Vector3.up * 1.4f);
-        if (screen.z > 0f)
+        Vector3 viewport = ViewportPosition;
+        if (HasPendingReward && viewport.z > 0f && viewport.x >= 0f && viewport.x <= 1f &&
+            viewport.y >= 0f && viewport.y <= 1f)
         {
             float x = screen.x * GameUi.Width / Screen.width - 100f;
             float y = GameUi.Height - screen.y * GameUi.Height / Screen.height;
-            GameUi.Panel(new Rect(x, y, 200, 27), State == ZoneState.Completed ? GameUi.Cyan : GameUi.Gold);
-            GameUi.Text(new Rect(x + 5, y + 2, 190, 23),
-                State == ZoneState.Completed ? $"{data.DisplayName}  ✓" : data.DisplayName,
+            GameUi.Panel(new Rect(x, y, 200, 27), GameUi.Gold);
+            GameUi.Text(new Rect(x + 5, y + 2, 190, 23), data.DisplayName,
                 14, GameUi.Cream, TextAnchor.MiddleCenter);
         }
 

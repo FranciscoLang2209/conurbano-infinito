@@ -6,6 +6,7 @@ public sealed class AudioDirector : MonoBehaviour
 
     [SerializeField] private AudioClip music;
     [SerializeField] private AudioClip impact;
+    [SerializeField] private AudioClip attackWarning;
     [SerializeField] private AudioClip experiencePickup;
     [SerializeField] private AudioClip levelUp;
     [SerializeField] private AudioClip damage;
@@ -32,6 +33,7 @@ public sealed class AudioDirector : MonoBehaviour
     private AudioSource effectsSource;
     private float masterVolume;
     private float nextImpactTime;
+    private float nextWarningTime;
 
     private void Awake()
     {
@@ -51,6 +53,8 @@ public sealed class AudioDirector : MonoBehaviour
     {
         if (music != null) musicSource.Play();
         Projectile.Hit += PlayImpact;
+        EnemyCharge.WarningStarted += PlayWarning;
+        BossAttack.WarningStarted += PlayWarning;
         ExperienceGem.Collected += PlayExperience;
         if (playerHealth != null) playerHealth.Damaged += PlayDamage;
         if (experience != null) experience.LevelUp += PlayLevelUp;
@@ -60,6 +64,8 @@ public sealed class AudioDirector : MonoBehaviour
     private void OnDisable()
     {
         Projectile.Hit -= PlayImpact;
+        EnemyCharge.WarningStarted -= PlayWarning;
+        BossAttack.WarningStarted -= PlayWarning;
         ExperienceGem.Collected -= PlayExperience;
         if (playerHealth != null) playerHealth.Damaged -= PlayDamage;
         if (experience != null) experience.LevelUp -= PlayLevelUp;
@@ -83,6 +89,13 @@ public sealed class AudioDirector : MonoBehaviour
         if (Time.unscaledTime < nextImpactTime) return;
         nextImpactTime = Time.unscaledTime + 0.07f;
         Play(impact);
+    }
+
+    private void PlayWarning()
+    {
+        if (Time.timeScale == 0f || Time.unscaledTime < nextWarningTime) return;
+        nextWarningTime = Time.unscaledTime + 0.2f;
+        Play(attackWarning);
     }
 
     private void PlayExperience() => Play(experiencePickup);

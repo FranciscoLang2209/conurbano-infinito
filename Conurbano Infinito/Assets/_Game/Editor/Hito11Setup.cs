@@ -101,7 +101,7 @@ public static class Hito11Setup
                 throw new System.InvalidOperationException("Prefab incompleto: " + name);
         }
 
-        string[] clips = { "Menu", "Partida", "Impacto", "Experiencia", "SubirNivel",
+        string[] clips = { "Menu", "Partida", "Impacto", "Aviso", "Experiencia", "SubirNivel",
             "Daño", "Victoria", "Derrota" };
         foreach (string name in clips)
             if (AssetDatabase.LoadAssetAtPath<AudioClip>(Root + "Audio/" + name + ".wav") == null)
@@ -136,6 +136,7 @@ public static class Hito11Setup
         var data = new SerializedObject(director);
         SetClip(data, "music", musicName);
         SetClip(data, "impact", "Impacto");
+        SetClip(data, "attackWarning", "Aviso");
         SetClip(data, "experiencePickup", "Experiencia");
         SetClip(data, "levelUp", "SubirNivel");
         SetClip(data, "damage", "Daño");

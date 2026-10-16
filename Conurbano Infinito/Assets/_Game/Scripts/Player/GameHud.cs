@@ -9,6 +9,10 @@ public sealed class GameHud : MonoBehaviour
 
     private WeaponController weapons;
     private UpgradeSelection upgrades;
+    private WaveDirector waves;
+    private int lastPhase;
+    private RiskZone[] pointsOfInterest;
+    private Rect[] poiPanels;
     private float displayedQuilombo;
     private float displayedHealth;
     private float displayedExperience;
@@ -25,6 +29,9 @@ public sealed class GameHud : MonoBehaviour
     {
         if (playerHealth != null) weapons = playerHealth.GetComponent<WeaponController>();
         upgrades = GetComponent<UpgradeSelection>();
+        waves = GetComponent<WaveDirector>();
+        pointsOfInterest = FindObjectsByType<RiskZone>(FindObjectsSortMode.InstanceID);
+        poiPanels = new Rect[pointsOfInterest.Length];
         if (playerHealth != null) displayedHealth = lastHealth = playerHealth.CurrentHealth;
         if (experience != null)
         {
@@ -70,6 +77,11 @@ public sealed class GameHud : MonoBehaviour
 
     private void Update()
     {
+        if (waves != null && waves.PhaseNumber != lastPhase)
+        {
+            lastPhase = waves.PhaseNumber;
+            ShowQuilomboFeedback($"OLEADA {lastPhase}/{waves.PhaseCount} · {waves.PhaseTitle}");
+        }
         if (playerHealth.CurrentHealth < lastHealth) damageFlashUntil = Time.unscaledTime + 0.22f;
         if (experience.Level > lastLevel) levelPulseUntil = Time.unscaledTime + 0.35f;
         lastHealth = playerHealth.CurrentHealth;
@@ -129,24 +141,29 @@ public sealed class GameHud : MonoBehaviour
         }
 
         int seconds = Mathf.FloorToInt(gameManager.ElapsedSeconds);
+        int duration = Mathf.CeilToInt(gameManager.DurationSeconds);
         var timer = new Rect((width - 240) / 2f, 10, 240, 91);
-        Color timerAccent = seconds >= 540 ? GameUi.Red : GameUi.Petrol;
+        Color timerAccent = seconds >= duration - 30 ? GameUi.Red : GameUi.Petrol;
         GameUi.Sign(timer, timerAccent);
         GameUi.Text(new Rect(timer.x + 7, timer.y + 8, timer.width - 14, 18),
-            "AGUANTÁ HASTA 10:00", 13, GameUi.Ink, TextAnchor.MiddleCenter);
+            $"AGUANTÁ HASTA {duration / 60:00}:{duration % 60:00}", 13, GameUi.Ink, TextAnchor.MiddleCenter);
         GameUi.Text(new Rect(timer.x, timer.y + 24, timer.width, 41),
             $"{seconds / 60:00}:{seconds % 60:00}", 37, timerAccent, TextAnchor.MiddleCenter);
         for (int i = 0; i < 10; i++)
             GameUi.Fill(new Rect(timer.x + 21 + i * 20, timer.y + 72, 16, 6),
-                seconds >= (i + 1) * 60 ? timerAccent : GameUi.Concrete);
+                gameManager.ElapsedSeconds >= (i + 1) * gameManager.DurationSeconds / 10f
+                    ? timerAccent : GameUi.Concrete);
 
         int count = weapons.EquippedWeaponCount;
         int passiveCount = upgrades == null ? 0 : upgrades.SelectedPassives.Count;
         var equipment = new Rect(width - 238, 10, 226, 37 + count * 27 +
             (passiveCount > 0 ? 25 + passiveCount * 21 : 0));
         GameUi.Sign(equipment, GameUi.Petrol);
-        GameUi.Text(new Rect(equipment.x + 11, equipment.y + 10, 202, 21),
+        GameUi.Text(new Rect(equipment.x + 11, equipment.y + 10, 142, 21),
             "EQUIPO / ARMAS", 15, GameUi.Ink);
+        GameUi.Text(new Rect(equipment.x + 154, equipment.y + 10, 59, 21),
+            $"{count} / {WeaponController.MaxEquippedWeapons}", 15, GameUi.Ink,
+            TextAnchor.MiddleRight);
         for (int i = 0; i < count; i++)
         {
             WeaponData item = weapons.GetEquippedWeapon(i);
@@ -167,6 +184,9 @@ public sealed class GameHud : MonoBehaviour
             }
         }
 
+        DrawPoiIndicators(Rect.MinMaxRect(12f, Mathf.Max(190f, equipment.yMax + 12f),
+            width - 12f, height - 140f), new Vector2(width, height));
+
         Health boss = gameManager.BossHealth;
         if (boss != null && !boss.IsDead)
         {
@@ -183,5 +203,70 @@ public sealed class GameHud : MonoBehaviour
             GameUi.Text(new Rect(12, height - 32, 240, 22), "DEV x10  ·  F9 NORMAL", 14, GameUi.Gold);
 
         GUI.matrix = previous;
+    }
+
+    private void DrawPoiIndicators(Rect area, Vector2 screenSize)
+    {
+        int placed = 0;
+        foreach (RiskZone zone in pointsOfInterest)
+        {
+            if (zone == null || !zone.isActiveAndEnabled || !zone.HasPendingReward) continue;
+            Vector3 viewport = zone.ViewportPosition;
+            if (!TryGetPoiPanel(viewport, screenSize, area, out Rect panel)) continue;
+            for (int i = 0; i < placed; i++)
+                panel = SeparatePoiPanels(panel, poiPanels[i], area);
+            poiPanels[placed++] = panel;
+
+            GameUi.Panel(panel, GameUi.Gold);
+            var arrow = new Vector2(panel.x + 18f, panel.center.y);
+            Vector2 direction = new Vector2(viewport.x * screenSize.x,
+                (1f - viewport.y) * screenSize.y) - arrow;
+            Matrix4x4 previous = GUI.matrix;
+            GUI.matrix = previous * Matrix4x4.TRS(new Vector3(arrow.x, arrow.y, 0f),
+                Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg), Vector3.one);
+            GameUi.Text(new Rect(-12f, -14f, 24f, 28f), ">", 24,
+                GameUi.Gold, TextAnchor.MiddleCenter);
+            GUI.matrix = previous;
+            GameUi.Text(new Rect(panel.x + 36f, panel.y + 6f, panel.width - 42f, 24f),
+                zone.DisplayName, 13, GameUi.Cream);
+        }
+    }
+
+    private static bool TryGetPoiPanel(Vector3 viewport, Vector2 screenSize, Rect area, out Rect panel)
+    {
+        panel = default;
+        if (viewport.z <= 0f || (viewport.x >= 0f && viewport.x <= 1f &&
+            viewport.y >= 0f && viewport.y <= 1f)) return false;
+
+        Vector2 half = new Vector2(100f, 18f);
+        Rect centers = Rect.MinMaxRect(area.xMin + half.x, area.yMin + half.y,
+            area.xMax - half.x, area.yMax - half.y);
+        Vector2 origin = screenSize * 0.5f;
+        origin.x = Mathf.Clamp(origin.x, centers.xMin, centers.xMax);
+        origin.y = Mathf.Clamp(origin.y, centers.yMin, centers.yMax);
+        Vector2 direction = new Vector2((viewport.x - 0.5f) * screenSize.x,
+            (0.5f - viewport.y) * screenSize.y);
+        float horizontal = direction.x == 0f ? float.PositiveInfinity :
+            ((direction.x > 0f ? centers.xMax : centers.xMin) - origin.x) / direction.x;
+        float vertical = direction.y == 0f ? float.PositiveInfinity :
+            ((direction.y > 0f ? centers.yMax : centers.yMin) - origin.y) / direction.y;
+        Vector2 center = origin + direction * Mathf.Min(horizontal, vertical);
+        panel = new Rect(center - half, half * 2f);
+        return true;
+    }
+
+    private static Rect SeparatePoiPanels(Rect panel, Rect other, Rect area)
+    {
+        // shortcut: separación para los dos POIs actuales; revisar distribución al agregar más zonas.
+        if (!panel.Overlaps(other)) return panel;
+        bool side = Mathf.Approximately(panel.xMin, area.xMin) ||
+            Mathf.Approximately(panel.xMax, area.xMax);
+        if (side)
+            panel.y = other.yMax + 6f + panel.height <= area.yMax ?
+                other.yMax + 6f : other.yMin - panel.height - 6f;
+        else
+            panel.x = other.xMax + 6f + panel.width <= area.xMax ?
+                other.xMax + 6f : other.xMin - panel.width - 6f;
+        return panel;
     }
 }

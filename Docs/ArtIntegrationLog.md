@@ -1,5 +1,36 @@
 # Registro de integración visual — primera slice
 
+## 2026-10-16 — Primera partida completa de cuatro minutos
+
+Se integró una progresión de seis fases (00:00, 00:30, 01:00, 02:00, 03:00, 03:30), La Jefa al minuto tres y victoria por supervivencia a 04:00. La primera elección ofrece Aerosol opcional. El perro señala su descanso con una barra celeste y refuerza el aviso amarillo; él y La Jefa emiten Aviso.wav. Se conservan destellos, impactos y sonidos existentes. El HUD adapta tiempo/progreso y anuncia oleadas; el menú explica controles y contraataque. Ver `PartidaCorta.md`.
+
+Unity compiló; pasaron dos comprobaciones de configuración y seis de Play Mode en copia aislada. La prueba final de partida corta también pasó en el Editor abierto, sin errores ni warnings nuevos; Game View mostró el objetivo y menú legibles. Una simulación acelerada completó 240 s, seis fases, jefe y ocho mejoras, con vida aumentada para validar integración. El índice de búsqueda del Editor produjo su excepción preexistente en cada arranque batch; no hubo errores de gameplay ni aserciones. Faltan balance humano, escucha del audio, inspección visual de la barra durante combate y build Windows.
+
+
+## Aerosol y Perro Callejero — 2026-10-16
+
+Aerosol dispara cinco nubes perforantes en un abanico corto y tiene tres mejoras propias, de tres rangos: daño, cadencia y cobertura. El Perro Callejero entra en las oleadas desde el minuto 2: persigue, anuncia una trayectoria fija, embiste y descansa. Conserva pooling, daño de contacto, drop de experiencia y feedback existentes. Se agregaron sprites originales de lata, nube y perro, generados con `Tools/generate_expansion_art.py`; el perro es estático. Configuración, límites y procedimiento están en `AerosolYPerro.md`.
+
+Unity 6000.3.23f1 compiló y pasaron Aerosol/Perro, Petardo, Hito 3, Hito 8, Hito 10, Quilombo y quinta slice visual. No hubo excepciones ni aserciones en la corrida final. Los PNG se inspeccionaron por separado; quedan pendientes la lectura en Game View, el balance de la combinación durante una partida completa y la build Windows.
+
+## Petardo — 2026-10-09
+
+Se agregó Petardo a las cartas de adquisición de `Main`, con mejoras propias de daño, radio y cadencia. Dispara hacia el enemigo más cercano y explota al impactar o llegar al destino. El daño de área excluye al jugador y se aplica una vez por enemigo, incluso con colliders duplicados. El proyectil y el anillo dorado reutilizan el pool existente. El sprite original se generó con `image_gen` integrado; la importación Point a 64×64 conserva un lienzo de una unidad de mundo y una escala de proyectil de 0,6. Estadísticas, prompt y procedimiento de comprobación están en `Petardo.md`.
+
+Unity 6000.3.23f1 compiló y pasaron los checks de Petardo (incluidos 150 enemigos, mejoras y reutilización), Hito 3, Hito 8, Hito 10, quinta slice, Quilombo e indicadores en una copia aislada con batchmode. Una prueba adicional completó 600 segundos acumulados a velocidad normal, con tres derrotas y reinicios, sin errores de gameplay. El bot no recogió experiencia; esta prueba no valida el balance. La excepción del índice QuickSearch al iniciar el Editor se contabilizó aparte y quedó documentada en `Petardo.md`. La inspección en Game View quedó pendiente por bloqueo de la Mac; no se generó build Windows.
+
+## Indicadores de POIs consumidos — 2026-10-09
+
+La flecha fuera de cámara y la etiqueta de mundo desaparecen al otorgar la recompensa del POI. `RiskZone.HasPendingReward` comparte esa condición entre `GameHud` y la etiqueta: la Parrilla sigue marcada hasta resistir los cinco segundos y el Kiosco deja de estar marcado al activar el bonus, sin esperar a que termine su temporizador. El aviso de recompensa y su cuenta regresiva conservan su comportamiento. Salir antes de completar la Parrilla mantiene los indicadores; reiniciar la escena los restaura.
+
+Unity 6000.3.23f1 compiló sin errores. Pasaron `Comprobar Quilombo`, ampliado con las transiciones de indicadores y reinicio, y `Comprobar indicadores de POIs` en Edit Mode. Game View mostró ambos lugares consumidos sin flechas y el Kiosco sin etiqueta mientras su bonus seguía activo con temporizador. Console: 0 errores y 0 warnings. No se generó una build Windows.
+
+## Equipo y Exploración — Hito 4: indicadores de POIs — 2026-10-09
+
+`GameHud` muestra nombre y flecha del Kiosco y la Parrilla fuera de cámara. Usa las referencias de cámara y datos de cada `RiskZone`, reserva espacio para vida, tiempo, equipo, pasivas y paneles inferiores, y separa las dos etiquetas si coinciden en un borde. Al entrar el centro del POI en cámara, desaparece el indicador y queda su etiqueta de mundo. Las zonas completadas usan acento cian. No hay cambios de escena, prefabs, recompensas ni colocación aleatoria.
+
+En Unity 6000.3.23f1 pasaron `Tools > Conurbano Infinito > Comprobar indicadores de POIs` en Edit Mode y Play Mode: ocho direcciones, límites inclusivos de cámara, tres formatos de UI (1280×720, 1280×960 y 1920×720), separación y movimiento de los dos POIs reales con restauración de posiciones. Game View confirmó flechas dentro de sus etiquetas, dos POIs alineados a la derecha sin superposición y transición fuera/dentro/fuera de cámara. Se retiraron los menús temporales usados para esa inspección. La separación se limita a los dos POIs actuales y debe revisarse al añadir la Cancha. No se generó una build Windows.
+
 ## Plaza y HUD — 2026-10-01
 
 `Tools/generate_plaza.py` genera arte original con la paleta existente: `PlazaPiso.png` combina tiles de pasto y baldosas con árboles, bancos, carteles, tachos y basura; `KioscoPlaza.png` y `ParrillaPlaza.png` son landmarks separados. La Parrilla queda rodeada de papeles, bolsas, botellas, cajones, conos y manchas. Los sprites de las dos zonas de riesgo reemplazan los cuadrados tintados en `Main`; sus `CircleCollider2D` trigger y sus coordenadas XY se conservan. Los sprites y el piso no tienen colisiones adicionales. `GameHud` conserva IMGUI y muestra vida, experiencia, nivel, cronómetro de 10 minutos, armas y pasivas elegidas en marcos pequeños. Siguen pendientes la tipografía pixel-art final y los iconos de mejoras vacíos; el decorado permanece estático.

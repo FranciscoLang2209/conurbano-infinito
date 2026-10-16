@@ -6,7 +6,7 @@
 - Escenas habilitadas: `Assets/_Game/Scenes/Menu.unity` primero y `Assets/_Game/Scenes/Main.unity` después. `SampleScene` sigue deshabilitada.
 - Menú: **Jugar**, **Créditos**, **Salir** y volumen general persistente. Enter inicia y C abre créditos; Esc vuelve desde créditos.
 - Partida: Esc pausa y reanuda. En pausa, derrota y victoria se puede reiniciar con R o volver al menú con M.
-- El HUD muestra valores y barras de vida y experiencia. El jugador ya tenía destello al recibir daño; los enemigos destellan al recibir proyectiles. Audio original provisional: dos músicas y seis efectos.
+- El HUD muestra valores y barras de vida y experiencia. El jugador ya tenía destello al recibir daño; los enemigos destellan al recibir proyectiles. Audio original provisional: dos músicas y siete efectos.
 
 ## Generar build Windows
 
@@ -23,7 +23,7 @@
 3. Recoger experiencia y comprobar barra, valor numérico, sonido de recogida y pantalla de mejora al subir de nivel. Elegir una mejora y comprobar que la partida continúa.
 4. Pulsar Esc: el juego debe quedar inmóvil; reanudar con Esc. Volver al menú con M, iniciar otra partida y comprobar que el tiempo, vida y experiencia comienzan de cero.
 5. Dejar morir al jugador: debe aparecer **DERROTA**, sonar su efecto, y permitir **R** para reiniciar o **M** para ir al menú.
-6. En una partida completa sin aceleración, comprobar la aparición del miniboss cerca de **05:00** y **VICTORIA** a **10:00**, con efecto de audio y opciones R/M. El atajo F9 solo existe en Editor o Development Build y sirve para una comprobación rápida del reloj; no reemplaza esta partida completa.
+6. En una partida completa sin aceleración, comprobar la aparición del miniboss a **03:00** y **VICTORIA** a **04:00**, con efecto de audio y opciones R/M. El atajo F9 solo existe en Editor o Development Build y sirve para una comprobación rápida del reloj; no reemplaza esta partida completa.
 7. Probar **Salir** en el menú y revisar que el proceso termine. Reabrir y verificar que `Docs/Licencias.md` está junto a la build y que la Console del Editor no registra errores nuevos al repetir el recorrido allí.
 
 ## Criterios de aceptación y riesgos pendientes

@@ -419,7 +419,7 @@ MonoBehaviour:
   playerWeapon: {fileID: 1634118244}
   spawnManager: {fileID: 1400000003}
   waveDirector: {fileID: 1400000006}
-  durationSeconds: 600
+  durationSeconds: 240
 --- !u!114 &1400000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -464,6 +464,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 206cfff6e8bc461dab2cc16dabab1230, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeSelection
+  firstWeaponUpgrade: {fileID: 11400000, guid: 1c72237845f5f40d0adeebb0179675d1, type: 2}
   experience: {fileID: 1634118245}
   gameManager: {fileID: 1400000002}
   movement: {fileID: 1634118246}
@@ -489,6 +490,14 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a13351358aee4f14879925d0c6282732, type: 2}
   - {fileID: 11400000, guid: 5b31bccf71ad47b9a8d63750f7ffeff0, type: 2}
   - {fileID: 11400000, guid: 5b1fd771fa0647a09c39555e68979f70, type: 2}
+  - {fileID: 11400000, guid: 1c72237845f5f40d0adeebb0179675d1, type: 2}
+  - {fileID: 11400000, guid: 26e01c0ee22fd47e580bcc811c7ccdd5, type: 2}
+  - {fileID: 11400000, guid: 3094f8ab4f1234229864bc3c57eb7d48, type: 2}
+  - {fileID: 11400000, guid: e26deea7cf05c4da2b8ab1238a5123c0, type: 2}
+  - {fileID: 11400000, guid: 4a34553a196d6404cba4a0143cc2d57e, type: 2}
+  - {fileID: 11400000, guid: 2cfa21b0e355542acacad756105534fe, type: 2}
+  - {fileID: 11400000, guid: c207babe1d1344dd28e36229331e663a, type: 2}
+  - {fileID: 11400000, guid: 2c049d3f5ff0e49ee98eba7f52cab19a, type: 2}
 --- !u!114 &1400000006
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -542,6 +551,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 334a6524276f14aae8bb30dbfd4c3d63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioDirector
+  attackWarning: {fileID: 8300000, guid: bf98ade49b354370a4043c9107a76be7, type: 3}
   music: {fileID: 8300000, guid: 8c982494733a74fddb16e581a1a52c99, type: 3}
   impact: {fileID: 8300000, guid: a37778f4b48654cb0ae9f0673a72ca60, type: 3}
   experiencePickup: {fileID: 8300000, guid: 2377b68e93f4a4fff9c5ad13600bb87f, type: 3}

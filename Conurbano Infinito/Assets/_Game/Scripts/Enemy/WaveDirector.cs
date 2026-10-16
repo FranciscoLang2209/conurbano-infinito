@@ -17,6 +17,9 @@ public sealed class WaveDirector : MonoBehaviour
     private bool elitesEnabled;
 
     public Health ActiveBoss { get; private set; }
+    public int PhaseNumber => currentPhase + 1;
+    public int PhaseCount => waves.Phases.Length;
+    public string PhaseTitle => currentPhase < 0 ? "" : waves.Phases[currentPhase].title;
     public int ActiveEnemyCount
     {
         get

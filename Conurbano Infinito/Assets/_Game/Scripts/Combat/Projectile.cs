@@ -6,10 +6,12 @@ using UnityEngine;
 public sealed class Projectile : MonoBehaviour
 {
     public static event Action Hit;
-    private enum Flight { Straight, Returning, Orbiting }
+    private enum Flight { Straight, Returning, Orbiting, Explosive }
+    private const float ExplosionSeconds = 0.22f;
 
     private readonly HashSet<Health> hitTargets = new();
     private readonly Dictionary<Health, float> nextOrbitHit = new();
+    private readonly List<Collider2D> blastTargets = new();
     private Rigidbody2D body;
     private SpriteRenderer spriteRenderer;
     private SpriteRenderer visualRenderer;
@@ -31,11 +33,18 @@ public sealed class Projectile : MonoBehaviour
     private Vector2 startPosition;
     private bool initialized;
     private bool returning;
+    private bool exploding;
+    private bool normalSimulation;
+    private float blastRadius;
+    private float explosionStartTime;
+    private Vector2 blastDestination;
     private static Sprite placeholderSprite;
+    private static Sprite explosionSprite;
 
     private void Awake()
     {
         body = GetComponent<Rigidbody2D>();
+        normalSimulation = body.simulated;
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         if (spriteRenderer.sprite == null)
@@ -70,10 +79,17 @@ public sealed class Projectile : MonoBehaviour
         initialized = false;
         owner = null;
         returning = false;
+        exploding = false;
+        blastRadius = 0f;
         visualPattern = WeaponPattern.Straight;
         hitTargets.Clear();
         nextOrbitHit.Clear();
-        if (body != null) body.linearVelocity = Vector2.zero;
+        blastTargets.Clear();
+        if (body != null)
+        {
+            body.linearVelocity = Vector2.zero;
+            body.simulated = normalSimulation;
+        }
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = normalSprite;
@@ -121,6 +137,16 @@ public sealed class Projectile : MonoBehaviour
         initialized = true;
     }
 
+    public void InitializeExplosive(Vector2 destination, float projectileDamage,
+        float projectileSpeed, float radius)
+    {
+        Initialize(destination - body.position, projectileDamage, projectileSpeed, 0,
+            Vector2.Distance(destination, body.position));
+        flight = Flight.Explosive;
+        blastDestination = destination;
+        blastRadius = radius;
+    }
+
     public void InitializeReturning(Transform targetOwner, Vector2 direction, float projectileDamage,
         float projectileSpeed, float range)
     {
@@ -165,6 +191,14 @@ public sealed class Projectile : MonoBehaviour
             return;
         }
 
+        if (exploding)
+        {
+            float progress = Mathf.Clamp01((Time.time - explosionStartTime) / ExplosionSeconds);
+            visualRenderer.color = new Color(1f, 0.85f, 0.3f, 1f - progress);
+            if (progress >= 1f) ObjectPool.Release(gameObject);
+            return;
+        }
+
         if (flight == Flight.Orbiting)
         {
             if (owner == null)
@@ -203,7 +237,12 @@ public sealed class Projectile : MonoBehaviour
         }
         else if ((body.position - startPosition).sqrMagnitude >= maximumDistanceSquared)
         {
-            ObjectPool.Release(gameObject);
+            if (flight == Flight.Explosive)
+            {
+                body.position = blastDestination;
+                Explode();
+            }
+            else ObjectPool.Release(gameObject);
             return;
         }
 
@@ -238,9 +277,15 @@ public sealed class Projectile : MonoBehaviour
 
     private void TryHit(Collider2D other)
     {
-        if (!initialized || other.gameObject.layer != LayerMask.NameToLayer("Enemy") ||
+        if (!initialized || exploding || other.gameObject.layer != LayerMask.NameToLayer("Enemy") ||
             !other.TryGetComponent(out Health target) || target.IsDead)
         {
+            return;
+        }
+
+        if (flight == Flight.Explosive)
+        {
+            Explode();
             return;
         }
 
@@ -277,5 +322,41 @@ public sealed class Projectile : MonoBehaviour
         {
             ObjectPool.Release(gameObject);
         }
+    }
+
+    private void Explode()
+    {
+        exploding = true;
+        body.linearVelocity = Vector2.zero;
+        body.simulated = false;
+        var filter = new ContactFilter2D { useTriggers = true };
+        filter.SetLayerMask(LayerMask.GetMask("Enemy"));
+        Physics2D.OverlapCircle(body.position, blastRadius, filter, blastTargets);
+        bool hit = false;
+        foreach (Collider2D collider in blastTargets)
+            if (collider.TryGetComponent(out Health target) && hitTargets.Add(target))
+                hit |= target.TakeDamage(damage);
+        if (hit) Hit?.Invoke();
+        blastTargets.Clear();
+
+        if (explosionSprite == null)
+        {
+            var texture = new Texture2D(32, 32, TextureFormat.RGBA32, false);
+            texture.filterMode = FilterMode.Point;
+            for (int y = 0; y < 32; y++)
+            for (int x = 0; x < 32; x++)
+            {
+                float radius = new Vector2(x - 15.5f, y - 15.5f).magnitude;
+                texture.SetPixel(x, y, radius >= 13f && radius <= 16f ? Color.white : Color.clear);
+            }
+            texture.Apply();
+            explosionSprite = Sprite.Create(texture, new Rect(0, 0, 32, 32),
+                new Vector2(0.5f, 0.5f), 32f);
+        }
+        visualRenderer.sprite = explosionSprite;
+        visualRenderer.color = new Color(1f, 0.85f, 0.3f, 1f);
+        visualRenderer.transform.localRotation = Quaternion.identity;
+        transform.localScale = Vector3.one * (blastRadius * 2f);
+        explosionStartTime = Time.time;
     }
 }

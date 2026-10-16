@@ -10,6 +10,7 @@ public sealed class UpgradeSelection : MonoBehaviour
     [SerializeField] private WeaponController weapon;
     [SerializeField] private Health health;
     [SerializeField] private UpgradeData[] upgrades;
+    [SerializeField] private UpgradeData firstWeaponUpgrade;
 
     private readonly Dictionary<UpgradeData, int> levels = new();
     private readonly List<UpgradeData> selectedPassives = new();
@@ -91,6 +92,10 @@ public sealed class UpgradeSelection : MonoBehaviour
             (available[i], available[chosen]) = (available[chosen], available[i]);
             options.Add(available[i]);
         }
+
+        if (experience.Level == 2 && firstWeaponUpgrade != null &&
+            available.Contains(firstWeaponUpgrade) && !options.Contains(firstWeaponUpgrade))
+            options[0] = firstWeaponUpgrade;
 
         if (options.Count == 0)
         {

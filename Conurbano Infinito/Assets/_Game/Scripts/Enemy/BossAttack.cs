@@ -1,19 +1,24 @@
+using System;
 using UnityEngine;
 
 public sealed class BossAttack : MonoBehaviour
 {
+    public static event Action WarningStarted;
     [SerializeField, Min(1)] private int damage = 2;
     [SerializeField, Min(0.1f)] private float attackIntervalSeconds = 5f;
     [SerializeField, Min(0.1f)] private float warningSeconds = 1.2f;
     [SerializeField, Min(0.1f)] private float attackHalfSize = 1.3f;
 
     private Transform target;
+    private Health health;
     private Health targetHealth;
     private GameObject warning;
     private Vector2 strikePosition;
     private float strikeTime;
     private float nextAttackTime;
     private static Sprite warningSprite;
+
+    private void Awake() => health = GetComponent<Health>();
 
     public void SetTarget(Transform newTarget)
     {
@@ -24,7 +29,14 @@ public sealed class BossAttack : MonoBehaviour
 
     private void Update()
     {
-        if (target == null || targetHealth == null || targetHealth.IsDead) return;
+        if (Time.timeScale == 0f) return;
+        if (target == null || targetHealth == null || targetHealth.IsDead ||
+            (health != null && health.IsDead))
+        {
+            if (warning != null) Destroy(warning);
+            warning = null;
+            return;
+        }
 
         if (warning != null)
         {
@@ -56,6 +68,7 @@ public sealed class BossAttack : MonoBehaviour
         renderer.sprite = warningSprite;
         renderer.color = new Color(1f, 0.15f, 0.1f, 0.45f);
         renderer.sortingOrder = 1;
+        WarningStarted?.Invoke();
     }
 
     private void OnDisable()

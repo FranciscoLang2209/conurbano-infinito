@@ -5,17 +5,19 @@ using UnityEngine.SceneManagement;
 
 public sealed class GameManager : MonoBehaviour
 {
+    public const float DefaultDurationSeconds = 240f;
     public enum GameState { Playing, Paused, Defeat, Victory }
 
     [SerializeField] private Health playerHealth;
     [SerializeField] private WeaponController playerWeapon;
     [SerializeField] private SpawnManager spawnManager;
     [SerializeField] private WaveDirector waveDirector;
-    [SerializeField, Min(1f)] private float durationSeconds = 600f;
+    [SerializeField, Min(1f)] private float durationSeconds = DefaultDurationSeconds;
 
     public GameState State { get; private set; } = GameState.Playing;
     public event Action<GameState> StateChanged;
     public float ElapsedSeconds { get; private set; }
+    public float DurationSeconds => durationSeconds;
     public Health BossHealth => waveDirector != null ? waveDirector.ActiveBoss : null;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     public bool IsFastForwarding { get; private set; }
