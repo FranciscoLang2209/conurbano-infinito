@@ -10,6 +10,8 @@
 
 ## Generar build Windows
 
+La demo actual tiene una build de entrega en `Builds/Windows/Demo-2026-10-16/`, generada con Unity 6000.3.23f1 para Windows x86_64/Mono, sin Development Build. Los controles y el registro de tres partidas están en `PruebaDemo.md`. Sigue pendiente ejecutarla en otra PC Windows.
+
 1. En una computadora con **Unity 6.3 LTS 6000.3.23f1** y el módulo **Windows Build Support** instalado, abrir la carpeta `Conurbano Infinito/` desde Unity Hub. Esperar que termine la importación y confirmar que la Console no tenga errores.
 2. Abrir **File > Build Profiles**. Seleccionar el perfil **Windows**, arquitectura **x86_64**, y dejar *Development Build* desactivado. Confirmar que `Menu` sea la primera escena habilitada y `Main` la segunda. `SampleScene` debe seguir deshabilitada.
 3. Pulsar **Build** y elegir una carpeta vacía fuera de `Assets`, por ejemplo `Builds/Windows/Hito11/`. Guardar el ejecutable como `ConurbanoInfinito.exe`.
