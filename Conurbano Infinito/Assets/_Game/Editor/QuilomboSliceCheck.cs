@@ -126,6 +126,9 @@ public static class QuilomboSliceCheck
         if (zone.State != RiskZone.ZoneState.Completed || zone.HasPendingReward || quilombo.Current != 15f ||
             !Mathf.Approximately(weapons.DamageMultiplier, 1.2f))
             throw new Exception("La Parrilla no otorgó ambas recompensas.");
+        if ((float)typeof(WaveDirector).GetField("quilomboThresholdBonus", flags).GetValue(waves) != 0.15f ||
+            (string)typeof(GameHud).GetField("feedbackMessage", flags).GetValue(hud) != "EL BARRIO SE ESTÁ PICANDO")
+            throw new Exception("La primera zona no activó el umbral de 10.");
         typeof(RiskZone).GetMethod("OnTriggerExit2D", flags).Invoke(zone, new object[] { playerCollider });
         typeof(RiskZone).GetMethod("OnTriggerEnter2D", flags).Invoke(zone, new object[] { playerCollider });
         typeof(RiskZone).GetMethod("Update", flags).Invoke(zone, null);
@@ -147,12 +150,15 @@ public static class QuilomboSliceCheck
         typeof(RiskZone).GetMethod("OnTriggerEnter2D", flags).Invoke(kiosk, new object[] { playerCollider });
         if (kiosk.HasPendingReward || quilombo.Current != 25f)
             throw new Exception("El Kiosco se activó dos veces o volvió a mostrar su indicador.");
-        if ((float)typeof(WaveDirector).GetField("quilomboThresholdBonus", flags).GetValue(waves) != 0.15f ||
-            (string)typeof(GameHud).GetField("feedbackMessage", flags).GetValue(hud) != "EL BARRIO SE ESTÁ PICANDO")
-            throw new Exception("El threshold de 25 no activó spawn o feedback.");
+        if ((float)typeof(WaveDirector).GetField("quilomboThresholdBonus", flags).GetValue(waves) != 0.35f ||
+            (bool)typeof(WaveDirector).GetField("elitesEnabled", flags).GetValue(waves) ||
+            (string)typeof(GameHud).GetField("queuedFeedback", flags).GetValue(hud) != "SE ESTÁ YENDO TODO AL CARAJO")
+            throw new Exception("Las dos zonas no activaron el umbral de 25 sin élites.");
+        typeof(GameHud).GetField("queuedFeedback", flags).SetValue(hud, null);
         quilombo.Remove(10f);
         quilombo.Add(10f);
-        if ((string)typeof(GameHud).GetField("queuedFeedback", flags).GetValue(hud) != null)
+        if ((float)typeof(WaveDirector).GetField("quilomboThresholdBonus", flags).GetValue(waves) != 0.35f ||
+            (string)typeof(GameHud).GetField("queuedFeedback", flags).GetValue(hud) != null)
             throw new Exception("El threshold de 25 se repitió.");
         typeof(ExperienceSystem).GetField("collectionBonusUntil", flags).SetValue(experience, Time.time - 1f);
         typeof(RiskZone).GetField("rewardEndTime", flags).SetValue(kiosk, Time.time - 1f);
@@ -179,25 +185,43 @@ public static class QuilomboSliceCheck
             UnityEngine.Object.DestroyImmediate(target);
         }
 
-        quilombo.Add(25f);
-        if ((float)typeof(WaveDirector).GetField("quilomboThresholdBonus", flags).GetValue(waves) != 0.35f ||
-            !(bool)typeof(WaveDirector).GetField("elitesEnabled", flags).GetValue(waves) ||
-            (string)typeof(GameHud).GetField("queuedFeedback", flags).GetValue(hud) != "SE ESTÁ YENDO TODO AL CARAJO")
-            throw new Exception("El threshold de 50 no activó spawn, hook elite o feedback.");
-        quilombo.Remove(10f);
-        quilombo.Add(10f);
-        if ((float)typeof(WaveDirector).GetField("quilomboThresholdBonus", flags).GetValue(waves) != 0.35f)
-            throw new Exception("El threshold de 50 se repitió.");
-
         EditorSceneManager.OpenScene("Assets/_Game/Scenes/Main.unity");
         foreach (RiskZone freshZone in UnityEngine.Object.FindObjectsByType<RiskZone>(FindObjectsSortMode.None))
             if (!freshZone.HasPendingReward)
                 throw new Exception("Reiniciar no restauró los indicadores de las zonas.");
         if (UnityEngine.Object.FindFirstObjectByType<QuilomboSystem>().Current != 0f ||
+            (bool)typeof(QuilomboThresholdController).GetField("reached10", flags)
+                .GetValue(UnityEngine.Object.FindFirstObjectByType<QuilomboThresholdController>()) ||
             (bool)typeof(QuilomboThresholdController).GetField("reached25", flags)
                 .GetValue(UnityEngine.Object.FindFirstObjectByType<QuilomboThresholdController>()))
             throw new Exception("Reiniciar no restauró los thresholds.");
 
-        Debug.Log("Quilombo: zonas, thresholds 25/50, presión de spawn y reinicio correctos.");
+        quilombo = UnityEngine.Object.FindFirstObjectByType<QuilomboSystem>();
+        thresholds = UnityEngine.Object.FindFirstObjectByType<QuilomboThresholdController>();
+        waves = UnityEngine.Object.FindFirstObjectByType<WaveDirector>();
+        player = UnityEngine.Object.FindFirstObjectByType<PlayerController>();
+        zone = Array.Find(UnityEngine.Object.FindObjectsByType<RiskZone>(FindObjectsSortMode.None),
+            candidate => candidate.name == "Parrilla del Barrio");
+        kiosk = Array.Find(UnityEngine.Object.FindObjectsByType<RiskZone>(FindObjectsSortMode.None),
+            candidate => candidate.name == "Kiosco 24hs");
+        typeof(QuilomboThresholdController).GetMethod("OnEnable", flags).Invoke(thresholds, null);
+        quilombo.Add(9f);
+        if ((float)typeof(WaveDirector).GetField("quilomboThresholdBonus", flags).GetValue(waves) != 0f)
+            throw new Exception("La presión aumenta antes de alcanzar 10 puntos.");
+        quilombo.Remove(9f);
+        typeof(RiskZone).GetMethod("OnTriggerEnter2D", flags).Invoke(kiosk,
+            new object[] { player.GetComponent<Collider2D>() });
+        if (quilombo.Current != 10f ||
+            (float)typeof(WaveDirector).GetField("quilomboThresholdBonus", flags).GetValue(waves) != 0.15f)
+            throw new Exception("Visitar primero el Kiosco no activa el umbral de 10.");
+        typeof(RiskZone).GetMethod("OnTriggerEnter2D", flags).Invoke(zone,
+            new object[] { player.GetComponent<Collider2D>() });
+        typeof(RiskZone).GetField("<Progress>k__BackingField", flags).SetValue(zone, data.RequiredDuration);
+        typeof(RiskZone).GetMethod("Update", flags).Invoke(zone, null);
+        if (quilombo.Current != 25f ||
+            (float)typeof(WaveDirector).GetField("quilomboThresholdBonus", flags).GetValue(waves) != 0.35f)
+            throw new Exception("Kiosco y después Parrilla no alcanzan el umbral de 25.");
+        EditorSceneManager.OpenScene("Assets/_Game/Scenes/Main.unity");
+        Debug.Log("Quilombo: zonas en ambos órdenes, umbrales 10/25, presión de spawn y reinicio correctos.");
     }
 }

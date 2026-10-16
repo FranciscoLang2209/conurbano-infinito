@@ -28,4 +28,4 @@
 
 ## Criterios de aceptación y riesgos pendientes
 
-El hito se acepta si los pasos anteriores pasan en una PC Windows distinta de la de desarrollo, sin referencias faltantes, errores de ejecución ni cortes de audio perceptibles. Los sprites y sonidos son provisionales y originales; la plaza todavía usa el fondo plano existente. Las pruebas de rendimiento del hito 10 deben repetirse si se reemplazan estos recursos por assets finales. No se generó una build Windows como parte de este documento: la prueba en otra PC queda pendiente hasta que el equipo ejecute estos pasos.
+El hito se acepta si los pasos anteriores pasan en una PC Windows distinta de la de desarrollo, sin referencias faltantes, errores de ejecución ni cortes de audio perceptibles. Los sprites y sonidos son provisionales y originales; la plaza usa piso y decoraciones originales, con Kiosco y Parrilla separados. Las pruebas de rendimiento del hito 10 deben repetirse si se reemplazan estos recursos por assets finales. Las builds de septiembre son anteriores a la demo actual: generar una nueva y probarla en otra PC.

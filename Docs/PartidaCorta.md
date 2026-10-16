@@ -13,6 +13,12 @@ Objetivo: sobrevivir hasta 04:00. La Jefa llega a 03:00; matarla ayuda, pero no 
 
 Quilombo conserva su multiplicador de frecuencia y límite. Las cartas de la primera subida de nivel incluyen adquirir Aerosol; sigue siendo opcional y ocupa uno de los cuatro espacios. Las demás elecciones mantienen su azar y filtrado.
 
+## Quilombo de la demo
+
+El Kiosco otorga 10 puntos y la Parrilla 15, una sola vez por partida. Los umbrales de presión son ahora **10 y 25**, alcanzables en cualquier orden: visitar un lugar activa el primer aviso y un bonus de 0,15 al multiplicador de oleadas; completar ambos activa el segundo y reemplaza ese bonus por 0,35. El término continuo `Quilombo / 100` y las recompensas no cambian. Con ambos lugares, el multiplicador total es 1,6: intervalo base dividido por 1,6 y límite base multiplicado por 1,6, redondeado hacia arriba. El HUD cambia a naranja en 10 y rojo en 25; la escala general sigue siendo 0–100.
+
+Esta demo usa los enemigos existentes: los umbrales no habilitan élites. El soporte opcional de élites de WaveDirector queda sin prefab asignado. La comprobación de Quilombo verifica los dos órdenes de visita, recompensas únicas, avisos sin repetición y reinicio, sin inyectar puntos para alcanzar la segunda escalada.
+
 El perro anuncia su dirección en amarillo y con un sonido breve; la franja gana opacidad durante los 0,65 s de preparación. No corrige su dirección durante la embestida. Una barra celeste debajo del perro indica los 1,1 s de descanso: el Aerosol de alcance 2,8 sirve para contraatacar cerca, a cambio de exponerse; Termo y Petardo permiten jugar a distancia. No se agregaron multiplicadores especiales de daño. Sus números previos se conservan.
 
 Los avisos de La Jefa también emiten el sonido nuevo. Sus ataques se detienen con la pausa y se cancelan al morir ella o su blanco. AudioDirector limita la repetición de avisos a uno cada 0,2 s, conserva el volumen general y desuscribe eventos al recargar escenas. El destello, anillo de impacto, desvanecimiento y audio de golpes existentes se reutilizan.

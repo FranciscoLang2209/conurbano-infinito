@@ -124,8 +124,8 @@ public sealed class GameHud : MonoBehaviour
             GameUi.Ink, TextAnchor.MiddleRight);
         GameUi.Meter(new Rect(22, 109, 250, 13),
             displayedExperience / experience.RequiredExperience, GameUi.Cyan);
-        Color quilomboColor = displayedQuilombo >= 75f ? GameUi.Red :
-            displayedQuilombo >= 50f ? GameUi.Orange : GameUi.Gold;
+        Color quilomboColor = displayedQuilombo >= 25f ? GameUi.Red :
+            displayedQuilombo >= 10f ? GameUi.Orange : GameUi.Gold;
         GameUi.Text(new Rect(22, 130, 154, 18), "! QUILOMBO", 12, GameUi.Ink);
         GameUi.Text(new Rect(176, 130, 96, 18), quilomboLabel, 12,
             GameUi.Ink, TextAnchor.MiddleRight);
