@@ -18,7 +18,7 @@ Unity 6000.3.23f1, copia aislada del proyecto. Se comparó el contenido de todos
 | Lectura del HUD y pausa | Pasó | Inspección en Game View del Editor abierto; rojo en 25 y naranja en 15 usando F6/F7 de desarrollo; se salió de Play Mode |
 | Compilación Windows x86_64/Mono de entrega | Pasó | BuildOptions.None, Menu → Main; ejecutable PE32+ x86-64 y carpeta de datos presentes |
 | Compilación macOS de entrega y apertura local | Pasó | BuildOptions.None, Menu → Main; proceso de la app nueva y gameplay/pausa visibles, Player.log sin errores ni excepciones en la inspección inicial |
-| Tres partidas humanas con valores normales | Pendiente | Completar PruebaDemo.md |
+| Tres partidas humanas con valores normales | Parcial: 1/3 informada | Francisco reportó derrota a 02:35 con Termo, Aerosol, Boleadora y Chancleta; gameplay lógico, sin cambios solicitados. Dos intentos pendientes en PruebaDemo.md |
 | Rendimiento con 150 enemigos en hardware objetivo | Pendiente | Seguir Hito10Performance.md; su check funcional solo prueba pooling |
 | Ejecución en otra PC Windows | Pendiente | Seguir Hito11Entrega.md |
 

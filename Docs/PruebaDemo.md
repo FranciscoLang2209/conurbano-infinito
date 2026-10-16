@@ -6,9 +6,11 @@ Hacer tres intentos; idealmente, que al menos uno lo juegue una persona que no c
 
 | Intento | Jugador conoce el juego | Victoria o minuto de derrota | Nivel y armas al terminar | Kiosco / Parrilla visitados | Qué no entendió o no pudo esquivar |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
+| 1 | No informado | Derrota a 02:35 | Nivel no informado; Termo, Aerosol, Boleadora y Chancleta | No informado | El gameplay le pareció lógico; no propuso cambios |
 | 2 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
 | 3 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
+
+Primer resultado informado por Francisco el 2026-10-16: «el gameplay me parecio logico asi que por ahora no cambiaria nada». Decisión: conservar el balance actual. No se deducen causas de la derrota ni ajustes de dificultad a partir de este único intento. Quedan dos intentos para completar la ronda; el nivel alcanzado y las visitas a los lugares no se informaron.
 
 Al terminar cada intento, registrar:
 
