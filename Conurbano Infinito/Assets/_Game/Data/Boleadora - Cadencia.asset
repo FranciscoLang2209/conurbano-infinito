@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Boleadora - Cadencia
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.e8b0e26a6c464b79b4889c5e37ebd1b5
   displayName: Boleadora · Cadencia
   description: -10% de intervalo de esta arma.
   icon: {fileID: 0}

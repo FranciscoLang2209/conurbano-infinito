@@ -4,6 +4,9 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Personaje", menuName = "Conurbano Infinito/Personaje")]
 public sealed class CharacterData : ScriptableObject
 {
+    [SerializeField] private string stableId;
+    public string StableId => stableId;
+
     [SerializeField] private string displayName;
     [SerializeField, TextArea] private string description;
     [SerializeField, Min(1)] private int startingHealth = 5;

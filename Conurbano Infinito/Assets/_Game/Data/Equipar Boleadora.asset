@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Equipar Boleadora
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.8eec726f74de41c3b486592436f81043
   displayName: Boleadora
   description: Equipá Boleadora.
   icon: {fileID: 0}

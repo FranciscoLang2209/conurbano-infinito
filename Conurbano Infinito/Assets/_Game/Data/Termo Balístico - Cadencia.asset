@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Termo Balístico - Cadencia
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.c78b5e4e295047aa8c54a56c0e8d42ae
   displayName: Termo Balístico · Cadencia
   description: -10% de intervalo de esta arma.
   icon: {fileID: 0}

@@ -266,6 +266,7 @@ public static class GameUi
     }
 
     public static string UpgradeIcon(UpgradeEffect effect) => effect == UpgradeEffect.MaximumHealth ? "heart" :
+        effect == UpgradeEffect.PassiveExplosionRadius ? "flame" : effect == UpgradeEffect.PassiveProjectileCount ? "rapid" :
         effect == UpgradeEffect.MovementSpeed ? "shoe" : effect == UpgradeEffect.FireInterval ? "rapid" : "fist";
 
     private static Color DisplayColor(Color color) => QualitySettings.activeColorSpace == ColorSpace.Linear ? color.linear : color;

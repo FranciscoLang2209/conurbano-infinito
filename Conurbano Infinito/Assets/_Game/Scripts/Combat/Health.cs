@@ -10,6 +10,7 @@ public sealed class Health : MonoBehaviour
     public int MaximumHealth => maximumHealth + maximumHealthBonus;
     public int CurrentHealth => Mathf.CeilToInt(remainingHealth - 0.0001f);
     public bool IsDead => remainingHealth <= 0.0001f;
+    public bool IsFull => remainingHealth >= MaximumHealth - 0.0001f;
 
     public event Action Damaged;
     public event Action Died;

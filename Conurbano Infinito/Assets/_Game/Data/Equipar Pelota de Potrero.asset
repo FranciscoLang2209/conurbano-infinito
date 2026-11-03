@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Equipar Pelota de Potrero
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.bdc5b8c3d13db4e36aec4672e222ac33
   displayName: Pelota de Potrero
   description: Hasta 2 rebotes entre enemigos cercanos.
   icon: {fileID: 0}

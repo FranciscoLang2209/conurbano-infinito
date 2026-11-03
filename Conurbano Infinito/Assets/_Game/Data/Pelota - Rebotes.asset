@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Pelota - Rebotes
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.f90e0b42da8684228a040c6672d4a8a5
   displayName: "Pelota \xB7 Rebotes"
   description: "Un rebote m\xE1s entre enemigos."
   icon: {fileID: 0}

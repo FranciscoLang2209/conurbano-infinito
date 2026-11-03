@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b23bf9cbc3942fa83aed43ed818d392, type: 3}
   m_Name: Petardo
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  stableId: weapon.68b9da5a7f3c648f5855290546f8d0cb
   pattern: 4
   damage: 2
   fireInterval: 3

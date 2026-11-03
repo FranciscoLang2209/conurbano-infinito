@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Yerba Premium
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.8b1a41c1e6b44ae99f2921b3c24f4f71
   displayName: Yerba Premium
   description: -10% de intervalo entre disparos por nivel.
   icon: {fileID: 0}

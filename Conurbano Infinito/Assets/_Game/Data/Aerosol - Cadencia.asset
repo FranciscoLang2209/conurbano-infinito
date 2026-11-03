@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Aerosol - Cadencia
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.c207babe1d1344dd28e36229331e663a
   displayName: "Aerosol \xB7 Cadencia"
   description: "10% menos de intervalo entre r\xE1fagas."
   icon: {fileID: 21300000, guid: 683a1f8dc2cc04f9dbe35c63050cce29, type: 3}

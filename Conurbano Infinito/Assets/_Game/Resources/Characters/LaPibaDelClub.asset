@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16959c83684d343c095511db85fba3ed, type: 3}
   m_Name: LaPibaDelClub
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  stableId: character.11dd8be42cfdd4865be3595ae59fecdb
   displayName: La Piba del Club
   description: "M\xE1s r\xE1pida, menos aguante. Busc\xE1 espacio."
   startingHealth: 4

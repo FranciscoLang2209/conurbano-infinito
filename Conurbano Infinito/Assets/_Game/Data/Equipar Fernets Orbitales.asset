@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Equipar Fernets Orbitales
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.29616599fc484b0aa3ec00c26b926a8d
   displayName: Fernets Orbitales
   description: Equipá Fernets Orbitales.
   icon: {fileID: 0}

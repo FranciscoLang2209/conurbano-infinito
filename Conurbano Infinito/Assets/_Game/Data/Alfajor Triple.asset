@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Alfajor Triple
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.190bd59cb26848439efa43eb43687958
   displayName: Alfajor Triple
   description: +1 de vida máxima y actual por nivel.
   icon: {fileID: 0}

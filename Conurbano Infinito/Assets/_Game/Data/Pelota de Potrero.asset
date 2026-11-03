@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b23bf9cbc3942fa83aed43ed818d392, type: 3}
   m_Name: Pelota de Potrero
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  stableId: weapon.2551d0ef554504810a53f496f36a2ad8
   pattern: 5
   damage: 2
   fireInterval: 1.8

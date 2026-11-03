@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: "Pelota - Da\xF1o"
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.be114ccadcc5a49548194ac1e41020b2
   displayName: "Pelota \xB7 Da\xF1o"
   description: "+1 de da\xF1o por impacto."
   icon: {fileID: 0}

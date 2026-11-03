@@ -1,41 +1,50 @@
 using System.Collections.Generic;
 using UnityEngine;
+using EquippedWeapon = BuildState.Weapon;
 
 [RequireComponent(typeof(Health))]
 public sealed class WeaponController : MonoBehaviour
 {
     public const int MaxEquippedWeapons = 4;
+    public const int MaxEquippedPassives = 4;
 
     [SerializeField] private WeaponData weapon;
     [SerializeField] private Projectile projectilePrefab;
 
-    private sealed class EquippedWeapon
-    {
-        public WeaponData Data;
-        public float NextAttackTime;
-        public int DamageBonus;
-        public float IntervalMultiplier = 1f;
-        public float SpeedMultiplier = 1f;
-        public int ProjectileCountBonus;
-        public int RicochetBonus;
-        public float ExplosionRadiusMultiplier = 1f;
-        public readonly List<Projectile> Orbitals = new();
-    }
-
     private readonly List<EquippedWeapon> equipped = new();
+    private BuildState build;
+    private BuildState Build => build ??= new BuildState(equipped);
     private Health health;
     private ObjectPool pool;
     private int enemyLayerMask;
-    private int damageBonus;
-    private float damageMultiplier = 1f;
-    private float fireIntervalMultiplier = 1f;
 
     // Keep the original getters for the Termo and the existing hito checks.
     public int Damage => weapon == null ? 0 : Mathf.RoundToInt(GetDamage(FindWeapon(weapon)));
-    public float DamageMultiplier => damageMultiplier;
+    public float DamageMultiplier => 1f + Build.DamagePercentBonus;
     public float FireInterval => weapon == null ? 0f : GetInterval(FindWeapon(weapon));
     public int EquippedWeaponCount => equipped.Count;
     public WeaponData GetEquippedWeapon(int index) => equipped[index].Data;
+    public IReadOnlyList<UpgradeData> SelectedPassives => Build.Passives;
+    public int GetPassiveLevel(UpgradeData data) => Build.PassiveLevels.TryGetValue(data, out int level) ? level : 0;
+
+    public bool CanUpgradePassive(UpgradeData data)
+    {
+        if (data == null || !data.IsPassive) return false;
+        int level = GetPassiveLevel(data);
+        if (level >= data.MaximumLevel || level == 0 && Build.Passives.Count >= MaxEquippedPassives) return false;
+        if (data.Effect != UpgradeEffect.PassiveExplosionRadius && data.Effect != UpgradeEffect.PassiveProjectileCount)
+            return true;
+        foreach (EquippedWeapon item in equipped)
+            if (data.SupportsWeapon(item.Data)) return true;
+        return false;
+    }
+
+    internal void AdvancePassiveLevel(UpgradeData data)
+    {
+        int level = GetPassiveLevel(data);
+        if (level == 0) Build.Passives.Add(data);
+        Build.PassiveLevels[data] = level + 1;
+    }
 
     private void Awake()
     {
@@ -88,7 +97,7 @@ public sealed class WeaponController : MonoBehaviour
     {
         if (amount > 0)
         {
-            damageBonus += amount;
+            Build.DamageBonus += amount;
             RefreshOrbitals();
         }
     }
@@ -96,25 +105,39 @@ public sealed class WeaponController : MonoBehaviour
     public void ApplyDamageMultiplier(float multiplier)
     {
         if (multiplier <= 1f || float.IsInfinity(multiplier) || float.IsNaN(multiplier) ||
-            damageMultiplier != 1f) return;
+            Build.DamagePercentBonus != 0f) return;
 
-        damageMultiplier = multiplier;
+        Build.DamagePercentBonus = multiplier - 1f;
         RefreshOrbitals();
     }
 
     public void ReduceFireInterval(float multiplier)
     {
-        if (multiplier <= 0f || multiplier >= 1f)
+        if (!(multiplier > 0f && multiplier < 1f))
         {
             return;
         }
 
-        fireIntervalMultiplier *= multiplier;
         foreach (EquippedWeapon item in equipped)
         {
-            item.NextAttackTime = Time.time + Mathf.Max(0f, item.NextAttackTime - Time.time) * multiplier;
+            float previousInterval = GetInterval(item);
+            item.NextAttackTime = Time.time + Mathf.Max(0f, item.NextAttackTime - Time.time) *
+                Mathf.Max(BuildRules.Current.MinimumAttackInterval, previousInterval * multiplier) / previousInterval;
         }
+        Build.IntervalMultiplier *= multiplier;
         RefreshOrbitals();
+    }
+
+    public int GetWeaponLevel(WeaponData data) => FindWeapon(data)?.Level ?? 0;
+
+    public bool CanUpgradeWeapon(WeaponData data, UpgradeEffect effect) =>
+        BuildStatistics.IsCompatible(effect, data) && FindWeapon(data) is EquippedWeapon item &&
+        item.Level < BuildRules.Current.MaximumWeaponLevel;
+
+    internal void AdvanceWeaponLevel(WeaponData data)
+    {
+        EquippedWeapon item = FindWeapon(data);
+        if (item != null && item.Level < BuildRules.Current.MaximumWeaponLevel) item.Level++;
     }
 
     public void IncreaseWeaponDamage(WeaponData data, int amount)
@@ -130,13 +153,14 @@ public sealed class WeaponController : MonoBehaviour
     public void ReduceWeaponFireInterval(WeaponData data, float multiplier)
     {
         EquippedWeapon item = FindWeapon(data);
-        if (item == null || multiplier <= 0f || multiplier >= 1f)
+        if (item == null || !(multiplier > 0f && multiplier < 1f))
         {
             return;
         }
 
+        float previousInterval = GetInterval(item);
         item.IntervalMultiplier *= multiplier;
-        item.NextAttackTime = Time.time + Mathf.Max(0f, item.NextAttackTime - Time.time) * multiplier;
+        item.NextAttackTime = Time.time + Mathf.Max(0f, item.NextAttackTime - Time.time) * GetInterval(item) / previousInterval;
         RefreshOrbitals();
     }
 
@@ -152,7 +176,7 @@ public sealed class WeaponController : MonoBehaviour
     public void IncreaseWeaponProjectileSpeed(WeaponData data, float multiplier)
     {
         EquippedWeapon item = FindWeapon(data);
-        if (item != null && multiplier > 1f)
+        if (item != null && multiplier > 1f && !float.IsInfinity(multiplier))
         {
             item.SpeedMultiplier *= multiplier;
             RefreshOrbitals();
@@ -204,7 +228,7 @@ public sealed class WeaponController : MonoBehaviour
         WeaponData data = item.Data;
         Vector2 offset = (Vector2)target.transform.position - (Vector2)transform.position;
         Vector2 direction = offset.sqrMagnitude > 0f ? offset.normalized : Vector2.right;
-        int count = data.ProjectileCount + item.ProjectileCountBonus;
+        int count = BuildStatistics.ProjectileCount(Build, item);
 
         for (int i = 0; i < count; i++)
         {
@@ -218,7 +242,7 @@ public sealed class WeaponController : MonoBehaviour
             if (data.Pattern == WeaponPattern.Explosive)
             {
                 projectile.InitializeExplosive(target.transform.position, GetDamage(item),
-                    GetSpeed(item), data.ExplosionRadius * item.ExplosionRadiusMultiplier);
+                    GetSpeed(item), BuildStatistics.ExplosionRadius(Build, item));
             }
             else if (data.Pattern == WeaponPattern.Returning)
             {
@@ -236,7 +260,7 @@ public sealed class WeaponController : MonoBehaviour
     private void EnsureOrbitals(EquippedWeapon item)
     {
         item.Orbitals.RemoveAll(orbital => orbital == null);
-        int count = item.Data.ProjectileCount + item.ProjectileCountBonus;
+        int count = BuildStatistics.ProjectileCount(Build, item);
         if (item.Orbitals.Count == count)
         {
             return;
@@ -277,13 +301,9 @@ public sealed class WeaponController : MonoBehaviour
         }
     }
 
-    private float GetDamage(EquippedWeapon item) => item == null ? 0f :
-        (item.Data.Damage + damageBonus + item.DamageBonus) * damageMultiplier;
-
-    private float GetInterval(EquippedWeapon item) => item == null ? 0f :
-        item.Data.FireInterval * fireIntervalMultiplier * item.IntervalMultiplier;
-
-    private float GetSpeed(EquippedWeapon item) => item.Data.ProjectileSpeed * item.SpeedMultiplier;
+    private float GetDamage(EquippedWeapon item) => item == null ? 0f : BuildStatistics.Damage(Build, item);
+    private float GetInterval(EquippedWeapon item) => item == null ? 0f : BuildStatistics.Interval(Build, item);
+    private float GetSpeed(EquippedWeapon item) => BuildStatistics.ProjectileSpeed(item);
 
     private EquippedWeapon FindWeapon(WeaponData data)
     {

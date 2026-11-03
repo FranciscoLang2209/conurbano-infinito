@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16959c83684d343c095511db85fba3ed, type: 3}
   m_Name: ElPibeDelBarrio
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  stableId: character.09767b40a6b054c6884ef9d21b54176b
   displayName: El Pibe del Barrio
   description: "El cl\xE1sico: aguante y ataques a distancia."
   startingHealth: 5

@@ -53,18 +53,18 @@ public static class BallCheck
             foreach (CharacterData character in CharacterData.All)
             {
                 await FreshMain(character);
-                CheckAcquisitionAndUpgrades();
+                await CheckAcquisitionAndUpgrades();
                 Debug.Log("BALL_CARDS_PASS character=" + character.name + " acquisition,damage,cadence,bounces,max-ranks,four-slots=True");
             }
             await FreshMain(CharacterData.All[0]);
             var controller = Object.FindFirstObjectByType<WeaponController>();
-            Acquire(controller);
+            await Acquire(controller);
             CheckControlledFlights(controller);
             await CheckPhysicsAndScreenshots();
             Require(errors == 0, "Gameplay Console errors: " + errors);
             EditorApplication.ExitPlaymode();
             await Until(() => !EditorApplication.isPlaying);
-            Debug.Log("BALL_CHECK_PASS characters=2 base=3-targets upgraded=6-targets nearest=True unique=True layers=True range=True pool=ball-straight-ball physics=True pause=True cards=4 ranks=3 HUD=True knownEditorSearchErrors=" + editorSearchErrors);
+            Debug.Log("BALL_CHECK_PASS characters=2 base=3-targets upgraded=6-targets nearest=True unique=True layers=True range=True pool=ball-straight-ball physics=True pause=True cards=4 weaponLevel=8 damage=3 cadence=1 bounces=3 HUD=True knownEditorSearchErrors=" + editorSearchErrors);
             EditorApplication.Exit(0);
         }
         catch (Exception error)
@@ -74,29 +74,38 @@ public static class BallCheck
         }
     }
 
-    private static void CheckAcquisitionAndUpgrades()
+    private static async Task CheckAcquisitionAndUpgrades()
     {
         var controller = Object.FindFirstObjectByType<WeaponController>();
         var selection = Object.FindFirstObjectByType<UpgradeSelection>();
         var deck = (UpgradeData[])Field(selection, "upgrades");
         Require(cards.All(deck.Contains) && cards[0].CanOffer(controller) && cards.Skip(1).All(c => !c.CanOffer(controller)),
             "Card wiring or improvements offered before acquisition.");
-        Acquire(controller);
+        await Acquire(controller);
         Require(!cards[0].CanOffer(controller) && cards.Skip(1).All(c => c.CanOffer(controller)), "Acquisition/filtering.");
         foreach (UpgradeData card in cards.Skip(1))
         {
-            for (int rank = 0; rank < card.MaximumLevel; rank++) SelectCard(card);
-            Require(selection.GetLevel(card) == card.MaximumLevel, "Upgrade ranks.");
-            WithDeck(new[] { card }, () => {
-                var xp = controller.GetComponent<ExperienceSystem>();
-                xp.AddExperience(xp.RequiredExperience - xp.CurrentExperience);
-                Require(!selection.IsShowing && Time.timeScale == 1, "Maxed card blocked play.");
-            });
+            int ranks = card.Effect == UpgradeEffect.WeaponFireInterval ? 1 : card.MaximumLevel;
+            for (int rank = 0; rank < ranks; rank++) await SelectCard(card);
+            Require(selection.GetLevel(card) == ranks, "Upgrade ranks.");
+            if (ranks == card.MaximumLevel)
+            {
+                WithDeck(new[] { card }, () => {
+                    var xp = controller.GetComponent<ExperienceSystem>();
+                    xp.AddExperience(xp.RequiredExperience - xp.CurrentExperience);
+                    Require(selection.IsFallback && selection.Options.Count == 0 && Time.timeScale == 0,
+                        "Maxed card missing explicit fallback.");
+                    selection.Select(0);
+                    Require(!selection.IsShowing && Time.timeScale == 1, "Maxed card blocked play.");
+                });
+                int frame = Time.frameCount;
+                await Until(() => Time.frameCount > frame);
+            }
         }
         object state = State(controller);
         float interval = (float)typeof(WeaponController).GetMethod("GetInterval", Flags).Invoke(controller, new[] { state });
-        Require(Mathf.Approximately(interval, 1.8f * Mathf.Pow(0.9f, 3)), "Cadence upgrade did not reach weapon.");
-        Require(selection.GetWeaponLevel(ball) == 10, "HUD weapon rank omitted ball upgrades.");
+        Require(Mathf.Approximately(interval, 1.8f * Mathf.Pow(0.9f, 1)), "Cadence upgrade did not reach weapon.");
+        Require(selection.GetWeaponLevel(ball) == 8, "HUD weapon rank omitted ball upgrades.");
         Vector2 start = (Vector2)controller.transform.position + Vector2.one * 200;
         var crowd = Enumerable.Range(0, 7).Select(i => Target(start + Vector2.right * (i + 1))).ToArray();
         Physics2D.SyncTransforms();
@@ -170,7 +179,7 @@ public static class BallCheck
     {
         await FreshMain(CharacterData.All[1]);
         var controller = Object.FindFirstObjectByType<WeaponController>();
-        Acquire(controller);
+        await Acquire(controller);
         var game = Object.FindFirstObjectByType<GameManager>();
         await (Task)typeof(UiRedesignCheck).GetMethod("SetSize", BindingFlags.Static | BindingFlags.NonPublic)
             .Invoke(null, new object[] { 1280, 720 });
@@ -223,19 +232,29 @@ public static class BallCheck
         Object.FindFirstObjectByType<WeaponController>().enabled = false;
     }
 
-    private static void Acquire(WeaponController controller)
+    private static async Task Acquire(WeaponController controller)
     {
-        SelectCard(cards[0]);
+        await SelectCard(cards[0]);
         Require(controller.IsEquipped(ball), "Cannot acquire ball.");
     }
 
-    private static void SelectCard(UpgradeData card) => WithDeck(new[] { card }, () => {
+    private static async Task SelectCard(UpgradeData card)
+    {
         var selection = Object.FindFirstObjectByType<UpgradeSelection>();
-        var xp = Object.FindFirstObjectByType<ExperienceSystem>();
-        xp.AddExperience(xp.RequiredExperience - xp.CurrentExperience);
-        Require(selection.IsShowing && selection.Options.Count == 1 && selection.Options[0] == card, "Card cannot be offered: " + card.name);
-        selection.Select(0);
-    });
+        var field = typeof(UpgradeSelection).GetField("upgrades", Flags);
+        object original = field.GetValue(selection);
+        try
+        {
+            field.SetValue(selection, new[] { card });
+            var xp = Object.FindFirstObjectByType<ExperienceSystem>();
+            xp.AddExperience(xp.RequiredExperience - xp.CurrentExperience);
+            Require(selection.IsShowing && selection.Options.Count == 1 && selection.Options[0] == card, "Card cannot be offered: " + card.name);
+            int frame = Time.frameCount;
+            selection.Select(0);
+            await Until(() => Time.frameCount > frame);
+        }
+        finally { field.SetValue(selection, original); }
+    }
 
     private static void WithDeck(UpgradeData[] cards, Action action)
     {

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEditor;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public static class Hito6Check
@@ -17,7 +18,7 @@ public static class Hito6Check
     }
 
     [MenuItem("Tools/Conurbano Infinito/Comprobar hito 6")]
-    public static void Run()
+    public static async void Run()
     {
         if (!Application.isPlaying)
         {
@@ -47,10 +48,16 @@ public static class Hito6Check
                 throw new System.Exception("La selección no pausó, no ofreció tres mejoras distintas o perdió una subida.");
             }
 
-            UpgradeData chosen = selection.Options[0];
+            // Leave room for the four legacy passives whose effects are checked below.
+            int chosenIndex = 0;
+            while (selection.Options[chosenIndex].Effect == UpgradeEffect.PassiveExplosionRadius ||
+                selection.Options[chosenIndex].Effect == UpgradeEffect.PassiveProjectileCount) chosenIndex++;
+            UpgradeData chosen = selection.Options[chosenIndex];
             chosenLevels.TryGetValue(chosen, out int level);
             chosenLevels[chosen] = level + 1;
-            selection.Select(0);
+            int frame = Time.frameCount;
+            selection.Select(chosenIndex);
+            while (Time.frameCount == frame) await Task.Delay(10);
         }
 
         if (selection.IsShowing || Time.timeScale != 1f || selection.Options.Count != 0)
@@ -92,9 +99,10 @@ public static class Hito6Check
                 remainingRanks += configured.MaximumLevel;
             }
         }
-        for (int i = 0; i < remainingRanks; i++)
+        for (int i = 0; i <= remainingRanks; i++)
         {
             experience.AddExperience(experience.RequiredExperience - experience.CurrentExperience);
+            if (selection.IsFallback) break;
             var distinct = new HashSet<UpgradeData>(selection.Options);
             if (!selection.IsShowing || Time.timeScale != 0f || distinct.Count != selection.Options.Count ||
                 selection.Options.Count == 0 || selection.Options.Count > 3)
@@ -114,10 +122,20 @@ public static class Hito6Check
             UpgradeData chosen = selection.Options[0];
             chosenLevels.TryGetValue(chosen, out int chosenLevel);
             chosenLevels[chosen] = chosenLevel + 1;
+            int frame = Time.frameCount;
             selection.Select(0);
+            while (Time.frameCount == frame) await Task.Delay(10);
         }
 
         experience.AddExperience(experience.RequiredExperience - experience.CurrentExperience);
+        if (!selection.IsFallback || selection.OptionCount != 1 || selection.Options.Count != 0)
+            throw new System.Exception("El catálogo agotado no ofrece continuar o curar.");
+        while (selection.IsShowing)
+        {
+            int frame = Time.frameCount;
+            selection.Select(0);
+            while (Time.frameCount == frame) await Task.Delay(10);
+        }
         if (selection.IsShowing || Time.timeScale != 1f || selection.Options.Count != 0)
         {
             throw new System.Exception("Las mejoras agotadas bloquearon la partida.");

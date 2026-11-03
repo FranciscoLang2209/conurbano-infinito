@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Boleadora - Cantidad
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.0eef8b5a88974630a03b618695009acc
   displayName: Boleadora · Cantidad
   description: +1 proyectil de esta arma.
   icon: {fileID: 0}

@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Chimichurri Casero
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.ae98f1d563204545b6114fe80d051cb4
   displayName: Chimichurri Casero
   description: +1 de daño por nivel.
   icon: {fileID: 0}

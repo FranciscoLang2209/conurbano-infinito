@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Fernets Orbitales - Giro
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.5b31bccf71ad47b9a8d63750f7ffeff0
   displayName: Fernets Orbitales · Giro
   description: +20% de velocidad orbital.
   icon: {fileID: 0}

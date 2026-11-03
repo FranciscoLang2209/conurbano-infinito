@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Boleadora - Daño
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.674df281689a4664acf7e434ecce9e97
   displayName: Boleadora · Daño
   description: +1 de daño de esta arma.
   icon: {fileID: 0}

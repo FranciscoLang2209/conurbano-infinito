@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Equipar Chancleta Teledirigida
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.a9d94897ac9041e4a02142ffc9079abf
   displayName: Chancleta Teledirigida
   description: Equipá Chancleta Teledirigida.
   icon: {fileID: 0}

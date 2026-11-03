@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b23bf9cbc3942fa83aed43ed818d392, type: 3}
   m_Name: Chancleta Teledirigida
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  stableId: weapon.a793d6d4b1dc4b1b92ff6686057c4ecf
   pattern: 2
   damage: 2
   fireInterval: 2

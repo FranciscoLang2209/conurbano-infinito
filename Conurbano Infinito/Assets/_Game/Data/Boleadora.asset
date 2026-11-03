@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b23bf9cbc3942fa83aed43ed818d392, type: 3}
   m_Name: Boleadora
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  stableId: weapon.7848e77546ac4a6693bb0e33cd47dbe2
   pattern: 1
   damage: 1
   fireInterval: 1.5

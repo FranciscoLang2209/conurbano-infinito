@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Termo Balístico - Cantidad
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.a105854b981447809b53056a5be22a45
   displayName: Termo Balístico · Cantidad
   description: +1 proyectil de esta arma.
   icon: {fileID: 0}

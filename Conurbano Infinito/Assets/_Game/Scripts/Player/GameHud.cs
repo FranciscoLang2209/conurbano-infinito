@@ -169,7 +169,7 @@ public sealed class GameHud : MonoBehaviour
                 WeaponData item = weapons.GetEquippedWeapon(i);
                 GameUi.Icon(GameUi.WeaponIcon(item), new Rect(slot.x + 11, slot.y + 3, 40, 40));
                 GameUi.Text(new Rect(slot.x, slot.y + 40, 62, 28),
-                    "N " + (upgrades == null ? 1 : upgrades.GetWeaponLevel(item)), 20, GameUi.Cream, TextAnchor.MiddleCenter);
+                    "N " + weapons.GetWeaponLevel(item), 20, GameUi.Cream, TextAnchor.MiddleCenter);
                 if (slot.Contains(Event.current.mousePosition))
                 {
                     GameUi.Panel(new Rect(left, equipmentY - 62, 300, 32), GameUi.Gold);
@@ -180,10 +180,17 @@ public sealed class GameHud : MonoBehaviour
         }
         if (upgrades != null)
         {
-            for (int i = 0; i < upgrades.SelectedPassives.Count; i++)
+            GameUi.Text(new Rect(left + 312, height - 88, 86, 30), "Pasivas", 18, GameUi.Cream);
+            for (int i = 0; i < WeaponController.MaxEquippedPassives; i++)
             {
-                UpgradeData passive = upgrades.SelectedPassives[i];
                 var slot = new Rect(left + 312 + i * 56, height - 54, 50, 34);
+                GameUi.Surface(slot, "slot");
+                if (i >= upgrades.SelectedPassives.Count)
+                {
+                    GameUi.Text(slot, "—", 20, GameUi.Concrete, TextAnchor.MiddleCenter);
+                    continue;
+                }
+                UpgradeData passive = upgrades.SelectedPassives[i];
                 GameUi.Icon(GameUi.UpgradeIcon(passive.Effect), new Rect(slot.x, slot.y, 24, 24));
                 GameUi.Text(new Rect(slot.x + 26, slot.y, 24, 28), upgrades.GetLevel(passive).ToString(), 16, GameUi.Cream);
                 if (slot.Contains(Event.current.mousePosition))

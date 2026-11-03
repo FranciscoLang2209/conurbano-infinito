@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -12,7 +13,9 @@ public static class PetardoCheck
     private const string Root = "Assets/_Game/Data/";
 
     [MenuItem("Tools/Conurbano Infinito/Comprobar Petardo en Play Mode")]
-    public static void Run()
+    public static async void Run() => await RunChecks();
+
+    public static async Task RunChecks()
     {
         if (!Application.isPlaying || Time.timeScale != 1f)
             throw new Exception("Iniciá una partida nueva en Main, sin pausa.");
@@ -44,7 +47,7 @@ public static class PetardoCheck
         Projectile shot = null;
         try
         {
-            SelectCard(selection, cards[0], deck);
+            await SelectCard(selection, cards[0], deck);
             if (!controller.IsEquipped(weapon) || cards[0].CanOffer(controller))
                 throw new Exception("La adquisición no equipó el Petardo una sola vez.");
             Vector2 center = (Vector2)controller.transform.position + new Vector2(200, 200);
@@ -94,7 +97,8 @@ public static class PetardoCheck
             Finish(shot);
 
             foreach (UpgradeData card in new[] { cards[1], cards[2], cards[3] })
-                for (int rank = 0; rank < card.MaximumLevel; rank++) SelectCard(selection, card, deck);
+                for (int rank = 0; rank < (card.Effect == UpgradeEffect.WeaponFireInterval ? 1 : card.MaximumLevel); rank++)
+                    await SelectCard(selection, card, deck);
             var crowd = new List<Health>();
             for (int i = 0; i < 150; i++)
                 crowd.Add(Target(targets, center + new Vector2(i % 15, i / 15) * 0.03f, "Enemy"));
@@ -113,19 +117,24 @@ public static class PetardoCheck
             deck.SetValue(selection, new[] { cards[2] });
             ExperienceSystem xp = controller.GetComponent<ExperienceSystem>();
             xp.AddExperience(xp.RequiredExperience - xp.CurrentExperience);
+            if (!selection.IsFallback || selection.Options.Count != 0 || Time.timeScale != 0f)
+                throw new Exception("Una mejora agotada no ofrece continuar o curar.");
+            int fallbackFrame = Time.frameCount;
+            selection.Select(0);
+            while (Time.frameCount == fallbackFrame) await Task.Delay(10);
             if (selection.IsShowing || Time.timeScale != 1f)
                 throw new Exception("Una mejora agotada bloqueó la partida.");
 
             object state = State(controller, weapon);
             float interval = weapon.FireInterval * (float)state.GetType().GetField("IntervalMultiplier").GetValue(state);
-            if (!Mathf.Approximately(interval, 3f * Mathf.Pow(0.9f, 3)))
+            if (!Mathf.Approximately(interval, 3f * Mathf.Pow(0.9f, 1)))
                 throw new Exception("La mejora de cadencia no redujo el intervalo.");
             controller.EquipWeapon(AssetDatabase.LoadAssetAtPath<WeaponData>(Root + "Boleadora.asset"));
             controller.EquipWeapon(AssetDatabase.LoadAssetAtPath<WeaponData>(Root + "Fernets Orbitales.asset"));
             WeaponData extra = AssetDatabase.LoadAssetAtPath<WeaponData>(Root + "Aerosol.asset");
             if (controller.EquippedWeaponCount != 4 || controller.CanEquipWeapon(extra) || controller.EquipWeapon(extra))
                 throw new Exception("El Petardo saltó el límite de cuatro armas.");
-            Debug.Log("Petardo: adquisición, tres mejoras hasta rango máximo, impacto y destino, daño único, capas, radio, 150 enemigos y pool correctos.");
+            Debug.Log("Petardo: adquisición, daño/radio al máximo, cadencia rango 1 y arma nivel 8, impacto y destino, daño único, capas, radio, 150 enemigos y pool correctos.");
         }
         finally
         {
@@ -143,14 +152,16 @@ public static class PetardoCheck
         return card;
     }
 
-    private static void SelectCard(UpgradeSelection selection, UpgradeData card, FieldInfo deck)
+    private static async Task SelectCard(UpgradeSelection selection, UpgradeData card, FieldInfo deck)
     {
         deck.SetValue(selection, new[] { card });
         ExperienceSystem xp = Object.FindFirstObjectByType<PlayerController>().GetComponent<ExperienceSystem>();
         xp.AddExperience(xp.RequiredExperience - xp.CurrentExperience);
         if (!selection.IsShowing || selection.Options.Count != 1 || selection.Options[0] != card)
             throw new Exception("La selección no ofreció " + card.DisplayName);
+        int frame = Time.frameCount;
         selection.Select(0);
+        while (Time.frameCount == frame) await Task.Delay(10);
     }
 
     private static Health Target(List<GameObject> targets, Vector2 position, string layer)

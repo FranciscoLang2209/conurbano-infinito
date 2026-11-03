@@ -7,14 +7,15 @@ public sealed class PlayerController : MonoBehaviour
     [SerializeField] private InputActionAsset inputActions;
     [SerializeField, Min(0f)] private float movementSpeed = 5f;
 
-    public float MovementSpeed => movementSpeed;
+    private float movementMultiplier = 1f;
+    public float MovementSpeed => BuildStatistics.MovementSpeed(movementSpeed, movementMultiplier);
     public CharacterData Character { get; private set; }
 
     public void IncreaseMovementSpeed(float multiplier)
     {
-        if (multiplier > 1f)
+        if (multiplier > 1f && !float.IsInfinity(multiplier))
         {
-            movementSpeed *= multiplier;
+            movementMultiplier *= multiplier;
         }
     }
 
@@ -57,7 +58,7 @@ public sealed class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        body.linearVelocity = moveInput * movementSpeed;
+        body.linearVelocity = moveInput * MovementSpeed;
     }
 
     private void OnDisable()

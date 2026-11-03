@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Zapatillas Flecha
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.05bdb9e3c26d4e9b9e8c1ad209033e41
   displayName: Zapatillas Flecha
   description: +10% de velocidad de movimiento por nivel.
   icon: {fileID: 0}

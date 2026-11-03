@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Chancleta Teledirigida - Cantidad
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.9d442aa29d6a4b0db863cfe118874702
   displayName: Chancleta Teledirigida · Cantidad
   description: +1 proyectil de esta arma.
   icon: {fileID: 0}

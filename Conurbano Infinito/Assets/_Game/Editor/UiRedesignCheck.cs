@@ -264,7 +264,10 @@ public static class UiRedesignCheck
         {
             xp.AddExperience(xp.RequiredExperience);
             options[0] = AssetDatabase.LoadAssetAtPath<UpgradeData>("Assets/_Game/Data/" + name + ".asset");
+            int frame = Time.frameCount;
             selection.Select(0);
+            await Until(() => Time.frameCount > frame, 5);
+            Require(!selection.IsShowing, "Passive fixture left an unconsumed choice.");
         }
         foreach (string name in new[] { "Boleadora", "Petardo" })
             weapons.EquipWeapon(AssetDatabase.LoadAssetAtPath<WeaponData>("Assets/_Game/Data/" + name + ".asset"));

@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: "Petardo - Da\xF1o"
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.3094f8ab4f1234229864bc3c57eb7d48
   displayName: "Petardo \xB7 Da\xF1o"
   description: "+1 de da\xF1o de la explosi\xF3n."
   icon: {fileID: 0}

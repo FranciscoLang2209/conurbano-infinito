@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Equipar Aerosol
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.1c72237845f5f40d0adeebb0179675d1
   displayName: Aerosol
   description: "Roc\xEDa un abanico de corto alcance que atraviesa grupos."
   icon: {fileID: 21300000, guid: 683a1f8dc2cc04f9dbe35c63050cce29, type: 3}

@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Chancleta Teledirigida - Daño
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.b687bbd8fb604018914020c5af21455e
   displayName: Chancleta Teledirigida · Daño
   description: +1 de daño de esta arma.
   icon: {fileID: 0}

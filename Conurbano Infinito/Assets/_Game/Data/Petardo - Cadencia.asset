@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Petardo - Cadencia
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.4a34553a196d6404cba4a0143cc2d57e
   displayName: "Petardo \xB7 Cadencia"
   description: -10% de intervalo entre petardos.
   icon: {fileID: 0}

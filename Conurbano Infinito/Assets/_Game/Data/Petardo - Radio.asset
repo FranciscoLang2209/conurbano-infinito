@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Petardo - Radio
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.e26deea7cf05c4da2b8ab1238a5123c0
   displayName: "Petardo \xB7 Radio"
   description: "+20% de radio de la explosi\xF3n."
   icon: {fileID: 0}

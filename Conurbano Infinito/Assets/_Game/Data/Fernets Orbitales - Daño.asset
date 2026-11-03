@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Fernets Orbitales - Daño
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.a13351358aee4f14879925d0c6282732
   displayName: Fernets Orbitales · Daño
   description: +1 de daño de esta arma.
   icon: {fileID: 0}

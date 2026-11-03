@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b23bf9cbc3942fa83aed43ed818d392, type: 3}
   m_Name: Aerosol
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  stableId: weapon.a0218daf9771a46a9844919810e1a789
   pattern: 0
   damage: 1
   fireInterval: 0.8

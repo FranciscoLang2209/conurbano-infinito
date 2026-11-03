@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: "Equipar Termo Bal\xEDstico"
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.3a3e835b1452a4415936fada32033c07
   displayName: "Termo Bal\xEDstico"
   description: "Equip\xE1 Termo Bal\xEDstico."
   icon: {fileID: 0}

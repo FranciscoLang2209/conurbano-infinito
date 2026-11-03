@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b23bf9cbc3942fa83aed43ed818d392, type: 3}
   m_Name: Fernets Orbitales
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  stableId: weapon.a18c108dc2744179b3c262f22269f0b4
   pattern: 3
   damage: 1
   fireInterval: 0.5

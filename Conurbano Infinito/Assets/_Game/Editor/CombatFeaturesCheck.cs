@@ -43,9 +43,9 @@ public static class CombatFeaturesCheck
             CheckGomero();
             await CheckDeathAndCapture();
             await FreshMain();
-            ExpansionCheck.Run();
+            await ExpansionCheck.RunChecks();
             await FreshMain();
-            PetardoCheck.Run();
+            await PetardoCheck.RunChecks();
             await FreshMain();
             VisualSlice5Check.Run();
             await Until(() => messages.Any(m => m.StartsWith("Quinta slice Play Mode:")) || errors > 0, 15);

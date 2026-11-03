@@ -13,6 +13,9 @@ public enum WeaponPattern
 [CreateAssetMenu(fileName = "Weapon", menuName = "Conurbano Infinito/Arma")]
 public sealed class WeaponData : ScriptableObject
 {
+    [SerializeField] private string stableId;
+    public string StableId => stableId;
+
     [SerializeField] private WeaponPattern pattern;
     [SerializeField, Min(1)] private int damage = 1;
     [SerializeField, Min(0.01f)] private float fireInterval = 1f;

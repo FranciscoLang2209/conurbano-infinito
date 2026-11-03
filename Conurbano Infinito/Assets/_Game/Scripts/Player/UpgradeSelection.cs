@@ -13,32 +13,30 @@ public sealed class UpgradeSelection : MonoBehaviour
     [SerializeField] private UpgradeData firstWeaponUpgrade;
 
     private readonly Dictionary<UpgradeData, int> levels = new();
-    private readonly List<UpgradeData> selectedPassives = new();
     private readonly List<UpgradeData> options = new(3);
     private readonly List<UpgradeData> available = new();
     private int pendingSelections;
     private bool isShowing;
     private int focusedOption;
+    private int lastSelectionFrame = -1;
+    private bool firstSelection = true;
 
     public bool IsShowing => isShowing;
     public IReadOnlyList<UpgradeData> Options => options;
-    public IReadOnlyList<UpgradeData> SelectedPassives => selectedPassives;
-    public int GetLevel(UpgradeData upgrade) => levels.TryGetValue(upgrade, out int level) ? level : 0;
+    public bool IsFallback => isShowing && options.Count == 0;
+    public int OptionCount => IsFallback ? 1 : options.Count;
+    public IReadOnlyList<UpgradeData> SelectedPassives => weapon.SelectedPassives;
+    public int GetLevel(UpgradeData upgrade) => upgrade.IsPassive ? weapon.GetPassiveLevel(upgrade) :
+        levels.TryGetValue(upgrade, out int level) ? level : 0;
+    private int FallbackHealing => Mathf.Max(1, Mathf.FloorToInt(health.MaximumHealth * 0.1f));
 
-    public int GetWeaponLevel(WeaponData data)
-    {
-        int level = 1;
-        foreach (var entry in levels)
-            if (entry.Key.TargetWeapon == data && entry.Key.Effect != UpgradeEffect.EquipWeapon)
-                level += entry.Value;
-        return level;
-    }
+    public int GetWeaponLevel(WeaponData data) => weapon.GetWeaponLevel(data);
 
     private void Awake()
     {
         firstWeaponUpgrade = CharacterData.Selected.FirstWeaponUpgrade;
         if (experience == null || gameManager == null || movement == null || weapon == null ||
-            health == null || upgrades == null || upgrades.Length == 0)
+            health == null || upgrades == null)
         {
             Debug.LogError("UpgradeSelection requiere experiencia, partida, jugador y mejoras.", this);
             enabled = false;
@@ -72,7 +70,7 @@ public sealed class UpgradeSelection : MonoBehaviour
 
     private void OnLevelUp(int level)
     {
-        if (gameManager.State != GameManager.GameState.Playing)
+        if (gameManager.State != GameManager.GameState.Playing || health.IsDead)
         {
             return;
         }
@@ -91,8 +89,7 @@ public sealed class UpgradeSelection : MonoBehaviour
         available.Clear();
         foreach (UpgradeData upgrade in upgrades)
         {
-            if (upgrade != null && upgrade.CanOffer(weapon) && !available.Contains(upgrade) &&
-                (!levels.TryGetValue(upgrade, out int level) || level < upgrade.MaximumLevel))
+            if (CanOffer(upgrade) && !available.Contains(upgrade))
             {
                 available.Add(upgrade);
             }
@@ -105,21 +102,16 @@ public sealed class UpgradeSelection : MonoBehaviour
             options.Add(available[i]);
         }
 
-        if (experience.Level == 2 && firstWeaponUpgrade != null &&
+        if (firstSelection && firstWeaponUpgrade != null &&
             available.Contains(firstWeaponUpgrade) && !options.Contains(firstWeaponUpgrade))
             options[0] = firstWeaponUpgrade;
-
-        if (options.Count == 0)
-        {
-            pendingSelections = 0;
-            isShowing = false;
-            Time.timeScale = 1f;
-            return;
-        }
 
         isShowing = true;
         Time.timeScale = 0f;
     }
+
+    private bool CanOffer(UpgradeData upgrade) =>
+        upgrade != null && upgrade.CanOffer(weapon) && GetLevel(upgrade) < upgrade.MaximumLevel;
 
     private void Update()
     {
@@ -129,7 +121,7 @@ public sealed class UpgradeSelection : MonoBehaviour
         }
 
         Keyboard keyboard = Keyboard.current;
-        focusedOption = GameUi.Navigate(focusedOption, options.Count, true);
+        focusedOption = GameUi.Navigate(focusedOption, OptionCount, true);
         if (GameUi.Confirm)
         {
             Select(focusedOption);
@@ -152,17 +144,32 @@ public sealed class UpgradeSelection : MonoBehaviour
     public void Select(int index)
     {
         if (!isShowing || gameManager.State != GameManager.GameState.Playing ||
-            index < 0 || index >= options.Count)
+            health.IsDead || lastSelectionFrame == Time.frameCount || index < 0 || index >= OptionCount)
         {
             return;
         }
 
-        UpgradeData selected = options[index];
-        selected.Apply(movement, weapon, health);
-        levels.TryGetValue(selected, out int level);
-        levels[selected] = level + 1;
-        if (selected.Effect <= UpgradeEffect.MaximumHealth && level == 0)
-            selectedPassives.Add(selected);
+        lastSelectionFrame = Time.frameCount;
+        if (IsFallback)
+        {
+            // Rebuild if the inventory changed while this choice was open.
+            foreach (UpgradeData upgrade in upgrades)
+                if (CanOffer(upgrade)) { ShowNext(); return; }
+            health.Heal(FallbackHealing);
+        }
+        else
+        {
+            UpgradeData selected = options[index];
+            if (!CanOffer(selected))
+            {
+                ShowNext();
+                return;
+            }
+            int level = GetLevel(selected);
+            selected.Apply(movement, weapon, health);
+            if (!selected.IsPassive) levels[selected] = level + 1;
+        }
+        firstSelection = false;
         pendingSelections--;
         isShowing = false;
 
@@ -192,29 +199,39 @@ public sealed class UpgradeSelection : MonoBehaviour
         GameUi.Text(new Rect(panel.x + 22, panel.y + 14, 900, 44), "Elegí una mejora", 28,
             GameUi.Ink, TextAnchor.MiddleCenter);
         GameUi.Text(new Rect(panel.x + 22, panel.y + 60, 900, 30),
-            "1 / 2 / 3 · Mouse · Flechas y Enter", 16, GameUi.Petrol, TextAnchor.MiddleCenter);
+            $"Armas {weapon.EquippedWeaponCount}/4 · Pasivas {SelectedPassives.Count}/4 · 1 / 2 / 3 · Mouse · Flechas y Enter",
+            16, GameUi.Petrol, TextAnchor.MiddleCenter);
 
-        for (int i = 0; i < options.Count; i++)
+        for (int i = 0; i < OptionCount; i++)
         {
-            UpgradeData upgrade = options[i];
-            var card = new Rect(panel.x + 22 + i * 304, panel.y + 100, 288, 408);
+            UpgradeData upgrade = IsFallback ? null : options[i];
+            var card = new Rect(panel.center.x - (OptionCount * 304 - 16) / 2f + i * 304, panel.y + 100, 288, 408);
             bool hover = card.Contains(Event.current.mousePosition);
             var face = new Rect(card.x, card.y - (hover ? 3 : 0), card.width, card.height);
             GameUi.Card(face, hover || focusedOption == i);
             GameUi.Fill(new Rect(face.x + 109, face.y + 24, 70, 70), GameUi.Petrol);
-            Sprite icon = upgrade.TargetWeapon != null ? GameUi.WeaponIcon(upgrade.TargetWeapon) : upgrade.Icon;
+            Sprite icon = upgrade == null ? null :
+                upgrade.TargetWeapon != null ? GameUi.WeaponIcon(upgrade.TargetWeapon) : upgrade.Icon;
             if (icon != null)
                 GameUi.Icon(icon, new Rect(face.x + 120, face.y + 35, 48, 48));
             else
-                GameUi.Icon(GameUi.UpgradeIcon(upgrade.Effect), new Rect(face.x + 120, face.y + 35, 48, 48));
-            levels.TryGetValue(upgrade, out int level);
+                GameUi.Icon(upgrade == null ? "heart" : GameUi.UpgradeIcon(upgrade.Effect), new Rect(face.x + 120, face.y + 35, 48, 48));
+            int level = upgrade == null ? 0 : GetLevel(upgrade);
             GameUi.Text(new Rect(face.x + 24, face.y + 106, 240, 96),
-                upgrade.DisplayName, 24, GameUi.Ink, TextAnchor.MiddleCenter, true);
+                upgrade != null ? upgrade.DisplayName : health.IsFull ? "Continuar" : "Recuperar vida",
+                24, GameUi.Ink, TextAnchor.MiddleCenter, true);
             GameUi.Fill(new Rect(face.x + 24, face.y + 212, 240, 1), GameUi.Petrol);
             GameUi.Text(new Rect(face.x + 24, face.y + 230, 240, 88),
-                upgrade.Description, 20, GameUi.Ink, TextAnchor.UpperCenter, true);
+                upgrade != null ? upgrade.Description : health.IsFull ? "Vida llena. Seguís sin recompensa." :
+                    $"Curás hasta {FallbackHealing} de vida. No quedan mejoras disponibles.",
+                20, GameUi.Ink, TextAnchor.UpperCenter, true);
+            string action = upgrade == null ? "Catálogo agotado" : upgrade.IsPassive ?
+                (level == 0 ? "Adquirir pasiva" : "Mejorar pasiva") :
+                $"{(upgrade.Effect == UpgradeEffect.EquipWeapon ? "Adquirir" : "Mejorar")} arma · {(upgrade.Effect == UpgradeEffect.EquipWeapon ? 1 : weapon.GetWeaponLevel(upgrade.TargetWeapon) + 1)}/{BuildRules.Current.MaximumWeaponLevel}";
+            GameUi.Text(new Rect(face.x + 24, face.y + 324, 240, 28), action,
+                18, GameUi.Petrol, TextAnchor.MiddleCenter);
             GameUi.Tag(new Rect(face.x + 24, face.y + 360, 164, 30),
-                $"Nivel {level + 1}/{upgrade.MaximumLevel}", GameUi.Gold);
+                upgrade == null ? "Sin mejoras" : $"{(upgrade.IsPassive ? "Nivel" : "Rango")} {level + 1}/{upgrade.MaximumLevel}", GameUi.Gold);
             GameUi.Key(new Rect(face.x + 222, face.y + 360, 42, 30), (i + 1).ToString());
             if (GUI.Button(card, GUIContent.none, GUIStyle.none))
             {

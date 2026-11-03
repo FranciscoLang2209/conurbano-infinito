@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -12,7 +13,9 @@ public static class ExpansionCheck
     private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
 
     [MenuItem("Tools/Conurbano Infinito/Comprobar Aerosol y Perro en Play Mode")]
-    public static void Run()
+    public static async void Run() => await RunChecks();
+
+    public static async Task RunChecks()
     {
         if (!Application.isPlaying || Time.timeScale != 1f)
             throw new Exception("Iniciá una partida nueva de Main sin pausa.");
@@ -45,7 +48,7 @@ public static class ExpansionCheck
             foreach (UpgradeData card in upgrades)
                 Require(card != null && Array.IndexOf(originalDeck, card) >= 0 && !card.CanOffer(controller),
                     "Mejora ausente o disponible antes de adquirir Aerosol.");
-            Select(selection, equip, deckField);
+            await Select(selection, equip, deckField);
             Require(controller.IsEquipped(aerosol) && !equip.CanOffer(controller), "La adquisición falló.");
 
             Health near = Target(targets, origin + Vector2.right, "Enemy");
@@ -68,10 +71,19 @@ public static class ExpansionCheck
 
             foreach (UpgradeData card in upgrades)
             {
-                for (int rank = 0; rank < card.MaximumLevel; rank++) Select(selection, card, deckField);
+                for (int rank = 0; rank < (card.Effect == UpgradeEffect.WeaponFireInterval ? 1 : card.MaximumLevel); rank++)
+                    await Select(selection, card, deckField);
                 deckField.SetValue(selection, new[] { card });
-                GainLevel(controller);
-                Require(!selection.IsShowing && Time.timeScale == 1f, "Una mejora agotada bloquea la partida.");
+                if (selection.GetLevel(card) == card.MaximumLevel || controller.GetWeaponLevel(aerosol) == 8)
+                {
+                    GainLevel(controller);
+                    Require(selection.IsFallback && selection.Options.Count == 0 && Time.timeScale == 0f,
+                        "Una mejora agotada no ofrece continuar o curar.");
+                    int frame = Time.frameCount;
+                    selection.Select(0);
+                    while (Time.frameCount == frame) await Task.Delay(10);
+                    Require(!selection.IsShowing && Time.timeScale == 1f, "Una mejora agotada bloquea la partida.");
+                }
             }
             near.ResetForReuse();
             near.IncreaseMaximumHealth(40);
@@ -86,7 +98,7 @@ public static class ExpansionCheck
             Require(near.CurrentHealth == 41, "Daño o protección contra impactos duplicados incorrectos.");
             object state = State(controller, aerosol);
             Require(Mathf.Approximately((float)state.GetType().GetField("IntervalMultiplier").GetValue(state),
-                Mathf.Pow(0.9f, 3)), "Cadencia no se aplicó.");
+                Mathf.Pow(0.9f, 1)), "Cadencia no se aplicó.");
             ObjectPool pool = Object.FindFirstObjectByType<ObjectPool>();
             Projectile reused = shots[0];
             ObjectPool.Release(reused.gameObject);
@@ -192,13 +204,15 @@ public static class ExpansionCheck
         xp.AddExperience(xp.RequiredExperience - xp.CurrentExperience);
     }
 
-    private static void Select(UpgradeSelection selection, UpgradeData card, FieldInfo deck)
+    private static async Task Select(UpgradeSelection selection, UpgradeData card, FieldInfo deck)
     {
         deck.SetValue(selection, new[] { card });
         GainLevel(Object.FindFirstObjectByType<WeaponController>());
         Require(selection.IsShowing && selection.Options.Count == 1 && selection.Options[0] == card,
             "La selección no ofreció " + card.DisplayName);
+        int frame = Time.frameCount;
         selection.Select(0);
+        while (Time.frameCount == frame) await Task.Delay(10);
     }
 
     private static Health Target(List<GameObject> targets, Vector2 position, string layer)

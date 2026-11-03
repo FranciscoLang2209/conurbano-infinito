@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Equipar Petardo
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.26e01c0ee22fd47e580bcc811c7ccdd5
   displayName: Petardo
   description: "Lanz\xE1 un petardo que explota y da\xF1a a los enemigos cercanos."
   icon: {fileID: 0}

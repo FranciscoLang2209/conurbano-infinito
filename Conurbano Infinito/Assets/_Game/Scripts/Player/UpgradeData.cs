@@ -12,12 +12,17 @@ public enum UpgradeEffect
     WeaponProjectileCount,
     WeaponProjectileSpeed,
     WeaponExplosionRadius,
-    WeaponRicochets
+    WeaponRicochets,
+    PassiveExplosionRadius,
+    PassiveProjectileCount
 }
 
 [CreateAssetMenu(fileName = "Upgrade", menuName = "Conurbano Infinito/Mejora")]
 public sealed class UpgradeData : ScriptableObject
 {
+    [SerializeField] private string stableId;
+    public string StableId => stableId;
+
     [SerializeField] private string displayName;
     [SerializeField, TextArea] private string description;
     [SerializeField] private Sprite icon;
@@ -25,6 +30,8 @@ public sealed class UpgradeData : ScriptableObject
     [SerializeField] private UpgradeEffect effect;
     [SerializeField] private float amount = 1f;
     [SerializeField] private WeaponData targetWeapon;
+    [SerializeField] private WeaponData[] compatibleWeapons = new WeaponData[0];
+    [SerializeField, Min(1)] private int unlockAtLevel = 1;
 
     public string DisplayName => displayName;
     public string Description => description;
@@ -32,27 +39,33 @@ public sealed class UpgradeData : ScriptableObject
     public int MaximumLevel => maximumLevel;
     public WeaponData TargetWeapon => targetWeapon;
     public UpgradeEffect Effect => effect;
+    public bool IsPassive => effect <= UpgradeEffect.MaximumHealth ||
+        effect == UpgradeEffect.PassiveExplosionRadius || effect == UpgradeEffect.PassiveProjectileCount;
+
+    public bool SupportsWeapon(WeaponData data) =>
+        data != null && compatibleWeapons != null && System.Array.IndexOf(compatibleWeapons, data) >= 0;
+
+    public float PassiveBonus(int level) => level < unlockAtLevel ? 0f :
+        effect == UpgradeEffect.PassiveProjectileCount ? amount : amount * level;
 
     public bool CanOffer(WeaponController weapon)
     {
+        if (weapon == null) return false;
+        if (IsPassive) return weapon.CanUpgradePassive(this);
         if (effect == UpgradeEffect.EquipWeapon)
         {
             return weapon.CanEquipWeapon(targetWeapon);
         }
 
-        if (effect == UpgradeEffect.WeaponDamage || effect == UpgradeEffect.WeaponFireInterval ||
-            effect == UpgradeEffect.WeaponProjectileCount || effect == UpgradeEffect.WeaponProjectileSpeed ||
-            effect == UpgradeEffect.WeaponExplosionRadius || effect == UpgradeEffect.WeaponRicochets)
-        {
-            return targetWeapon != null && weapon.IsEquipped(targetWeapon) &&
-                (effect != UpgradeEffect.WeaponRicochets || targetWeapon.Pattern == WeaponPattern.Ricochet);
-        }
+        if (BuildStatistics.IsWeaponUpgrade(effect))
+            return weapon.CanUpgradeWeapon(targetWeapon, effect);
 
-        return true;
+        return false;
     }
 
     public void Apply(PlayerController movement, WeaponController weapon, Health health)
     {
+        if (!CanOffer(weapon)) return;
         switch (effect)
         {
             case UpgradeEffect.Damage:
@@ -89,5 +102,7 @@ public sealed class UpgradeData : ScriptableObject
                 weapon.IncreaseWeaponRicochets(targetWeapon, Mathf.RoundToInt(amount));
                 break;
         }
+        if (IsPassive) weapon.AdvancePassiveLevel(this);
+        if (BuildStatistics.IsWeaponUpgrade(effect)) weapon.AdvanceWeaponLevel(targetWeapon);
     }
 }

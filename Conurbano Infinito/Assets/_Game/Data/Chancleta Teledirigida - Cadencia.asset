@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 070aab24a33e465097460ea92f76fa7f, type: 3}
   m_Name: Chancleta Teledirigida - Cadencia
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  stableId: upgrade.2c8872a66d9b4211b470946a33b393d1
   displayName: Chancleta Teledirigida · Cadencia
   description: -10% de intervalo de esta arma.
   icon: {fileID: 0}
