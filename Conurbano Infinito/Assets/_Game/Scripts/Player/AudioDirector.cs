@@ -54,6 +54,7 @@ public sealed class AudioDirector : MonoBehaviour
         if (music != null) musicSource.Play();
         Projectile.Hit += PlayImpact;
         EnemyCharge.WarningStarted += PlayWarning;
+        EnemyRanged.WarningStarted += PlayWarning;
         BossAttack.WarningStarted += PlayWarning;
         ExperienceGem.Collected += PlayExperience;
         if (playerHealth != null) playerHealth.Damaged += PlayDamage;
@@ -65,6 +66,7 @@ public sealed class AudioDirector : MonoBehaviour
     {
         Projectile.Hit -= PlayImpact;
         EnemyCharge.WarningStarted -= PlayWarning;
+        EnemyRanged.WarningStarted -= PlayWarning;
         BossAttack.WarningStarted -= PlayWarning;
         ExperienceGem.Collected -= PlayExperience;
         if (playerHealth != null) playerHealth.Damaged -= PlayDamage;

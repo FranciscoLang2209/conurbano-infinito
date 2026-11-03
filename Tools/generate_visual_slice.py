@@ -17,6 +17,8 @@ PALETTE = {
     "violet": "A15CAC", "grass_dark": "2F5843",
     "grass": "4E8451", "grass_light": "84B96A", "grass_sun": "B9D879",
     "pavement_dark": "514E4B", "pavement": "746C62",
+    "turf": "54735A", "turf_shade": "506E56", "turf_light": "58785E",
+    "turf_detail": "648264", "path": "9B947F", "path_joint": "898574",
 }
 
 
@@ -79,6 +81,7 @@ class Canvas:
 
 def player():
     c = Canvas(48)
+    c.ellipse(24, 45, 18, 2, "ink", 120)
     # Shoes, legs and the red backpack remain readable behind the coat.
     c.rect(17, 34, 23, 42, "ink")
     c.rect(18, 35, 22, 40, "blue_dark")

@@ -140,7 +140,8 @@ public static class ExpansionCheck
             Time.timeScale = 1f;
             ObjectPool.Release(dog);
             dog = Object.FindFirstObjectByType<SpawnManager>().Spawn(dogPrefab).gameObject;
-            Require(dog == dogHealth.gameObject && dogHealth.CurrentHealth == 8 &&
+            Require(dog == dogHealth.gameObject &&
+                dogHealth.CurrentHealth == dogPrefab.GetComponent<Health>().MaximumHealth &&
                 !warning.gameObject.activeSelf && !recoveryIndicator.gameObject.activeSelf,
                 "El perro no se reinició al salir del pool.");
             body.position = start;

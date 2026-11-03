@@ -56,6 +56,7 @@ public static class QuilomboSliceCheck
         PlayerController player = UnityEngine.Object.FindFirstObjectByType<PlayerController>();
         if (quilombo == null || zone == null || kiosk == null || hud == null || waves == null || thresholds == null || placement == null || player == null)
             throw new Exception("Falta un componente del slice en Main.");
+        player.GetComponent<Health>().ResetForReuse();
 
         var placementFields = new SerializedObject(placement);
         SerializedProperty points = placementFields.FindProperty("spawnPoints");
@@ -127,7 +128,7 @@ public static class QuilomboSliceCheck
             !Mathf.Approximately(weapons.DamageMultiplier, 1.2f))
             throw new Exception("La Parrilla no otorgó ambas recompensas.");
         if ((float)typeof(WaveDirector).GetField("quilomboThresholdBonus", flags).GetValue(waves) != 0.15f ||
-            (string)typeof(GameHud).GetField("feedbackMessage", flags).GetValue(hud) != "EL BARRIO SE ESTÁ PICANDO")
+            (string)typeof(GameHud).GetField("feedbackMessage", flags).GetValue(hud) != "El barrio se está picando")
             throw new Exception("La primera zona no activó el umbral de 10.");
         typeof(RiskZone).GetMethod("OnTriggerExit2D", flags).Invoke(zone, new object[] { playerCollider });
         typeof(RiskZone).GetMethod("OnTriggerEnter2D", flags).Invoke(zone, new object[] { playerCollider });
@@ -152,7 +153,7 @@ public static class QuilomboSliceCheck
             throw new Exception("El Kiosco se activó dos veces o volvió a mostrar su indicador.");
         if ((float)typeof(WaveDirector).GetField("quilomboThresholdBonus", flags).GetValue(waves) != 0.35f ||
             (bool)typeof(WaveDirector).GetField("elitesEnabled", flags).GetValue(waves) ||
-            (string)typeof(GameHud).GetField("queuedFeedback", flags).GetValue(hud) != "SE ESTÁ YENDO TODO AL CARAJO")
+            (string)typeof(GameHud).GetField("queuedFeedback", flags).GetValue(hud) != "Se está yendo todo al carajo")
             throw new Exception("Las dos zonas no activaron el umbral de 25 sin élites.");
         typeof(GameHud).GetField("queuedFeedback", flags).SetValue(hud, null);
         quilombo.Remove(10f);
@@ -200,6 +201,7 @@ public static class QuilomboSliceCheck
         thresholds = UnityEngine.Object.FindFirstObjectByType<QuilomboThresholdController>();
         waves = UnityEngine.Object.FindFirstObjectByType<WaveDirector>();
         player = UnityEngine.Object.FindFirstObjectByType<PlayerController>();
+        player.GetComponent<Health>().ResetForReuse();
         zone = Array.Find(UnityEngine.Object.FindObjectsByType<RiskZone>(FindObjectsSortMode.None),
             candidate => candidate.name == "Parrilla del Barrio");
         kiosk = Array.Find(UnityEngine.Object.FindObjectsByType<RiskZone>(FindObjectsSortMode.None),

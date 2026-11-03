@@ -1,13 +1,16 @@
 # Contexto de Conurbano Infinito
 
 <!-- unity-onboarding:generated:start -->
-Revisado el 2026-10-16 sobre `ad51a31`, rama `codex/demo-cuatro-minutos`; prototipo previo preservado en `0a2d39f`.
+Revisado el 2026-10-23 sobre `797de66` y cambios locales, rama `codex/demo-cuatro-minutos`; prototipo previo preservado en `0a2d39f`.
 
 - Raíz: `Conurbano Infinito/`; Unity **6000.3.23f1**. Render URP, Input System (activeInputHandler=1), juego local 2D. No se detectaron paquetes ni herramientas Unity MCP; hay Editor local y ejecutable para batchmode.
 - Código propio: `Assets/_Game/Scripts/{Player,Enemy,Combat,Camera}`; herramientas y comprobaciones en `Assets/_Game/Editor`. No hay asmdefs propios: runtime en Assembly-CSharp y editor en Assembly-CSharp-Editor.
-- Composición por MonoBehaviours, referencias `[SerializeField] private`, clases sealed sin namespace. Datos de armas, mejoras y oleadas en ScriptableObjects de `Assets/_Game/Data`. IMGUI compartido mediante GameUi.
+- Composición por MonoBehaviours, referencias `[SerializeField] private`, clases sealed sin namespace. Datos de armas, mejoras y oleadas en ScriptableObjects de `Assets/_Game/Data`. IMGUI compartido mediante GameUi, con sprites de Resources/BarrioUi e importador acotado BarrioUiImport. HUD compacto y pausa ilustrada; navegación con flechas/Tab/Enter y diagnóstico F3 oculto inicialmente. Ver Docs/UiRedesign/README.md.
 - Flujo habilitado de build: Menu → Main. MenuScreen carga Main; GameManager gobierna Playing/Paused/Defeat/Victory, pausa con Esc y recarga escena con R. La victoria requiere sobrevivir 240 s; no exige matar a La Jefa. SampleScene está deshabilitada.
 - GameManager avanza el reloj; WaveDirector elige fases de Oleadas.asset, pondera enemigos con Quilombo y genera a La Jefa a 180 s. SpawnManager asigna blancos. ObjectPool/PooledObject reinician cuerpos, Health y visuales.
+- Densidad del 2026-10-23: intervalos 2,4/1,8/1,2/0,85/1,3/0,65 s y topes 18/26/36/46/40/55. Se conservaron mezcla, estadísticas, XP y duración. Pasaron CombatFeaturesCheck en referencia y candidato y 30 casos runtime de densidad/Quilombo en copia aislada. Francisco ganó el candidato sin mucho esfuerzo, con rutas variadas; se conserva esa densidad para probar resistencia. Checkpoints, evidencia y reversión en Docs/PlanDificultad.md.
+- Resistencia: Paloma 15, Bolsa 6, Perro 10 y Gomero 12; Mosquito 3 y Jefa 100. Herramienta de creación del Gomero sincronizada. Pasaron CombatFeaturesCheck (12 ciclos de vida/daño/muerte/XP única/reutilización para seis prefabs) y 30 casos de densidad/Quilombo. Francisco la encontró mucho mejor, pero equipar Aerosol quitó el peligro; se conserva vida para probar frecuencia.
+- Candidato actual de frecuencia: intervalos 2,4/1,55/1,05/0,75/1,15/0,57 s, mismos topes y vidas. Cambio de cinco valores sólo desde los 30 s; más oportunidades de spawn (+13,12% teórico total) sin debilitar armas. Pasaron CombatFeaturesCheck, 12 ciclos de vida/pool y 30 casos de fases/Quilombo en copia aislada. Checkpoint y evidencia en Docs/PlanDificultad.md, sección 12. Evaluación humana y medición de rendimiento pendientes.
 - Demo: Kiosco (+10) y Parrilla (+15) activan los umbrales de Quilombo 10/25 en cualquier orden; bonuses de presión 0,15/0,35, sin élites. Se conservan la escala 0–100 y las recompensas. Resultados de validación en Docs/DemoValidacion.md; registro de partidas humanas pendientes en Docs/PruebaDemo.md.
 - WeaponController equipa hasta cuatro armas; UpgradeSelection ofrece tres cartas al subir de nivel. Main prioriza la adquisición de Aerosol en la primera elección. Projectile implementa proyectiles rectos, de regreso, orbitales y explosivos.
 - Health emite Damaged/Died. HitFlash y PlayerSurvival muestran impactos; AudioDirector escucha proyectiles, experiencia, jugador, estados y avisos de ataque. EnemyCharge prepara una dirección fija y muestra una barra celeste durante su recuperación.
@@ -17,3 +20,45 @@ Revisado el 2026-10-16 sobre `ad51a31`, rama `codex/demo-cuatro-minutos`; protot
 
 Fuentes: ProjectVersion.txt, manifest.json/packages-lock.json, ProjectSettings.asset, EditorBuildSettings.asset; GameManager, MenuScreen, WaveData/WaveDirector, SpawnManager, WeaponController, UpgradeSelection, Projectile, Health, EnemyCharge, BossAttack, AudioDirector, GameHud y checks de Editor; Docs/AerosolYPerro.md, Petardo.md, ArtIntegrationLog.md.
 <!-- unity-onboarding:generated:end -->
+
+## Animaciones y enemigo a distancia — 2026-10-23
+
+PlayerWalk tiene seis poses a 10 fps. EnemyCharge controla las cuatro fases del Animator del perro mediante `ChargePhase`. `EnemyRanged` controla el Vecino Gomero (`RangedPhase`), conectado por SpawnManager y AudioDirector; su prefab entra con peso 1 en Oleadas desde 120 s. `EnemyStone` usa ObjectPool y barrido circular sólo contra Player, sin nuevas capas. HitFlash suspende el Animator al morir y restaura su estado al devolver al pool; sus efectos ahora usan tiempo escalado para respetar pausa. Integración acotada en CombatFeaturesSetup, validación aislada en CombatFeaturesCheck; detalles en `Docs/CombateYVecinoGomero.md`.
+
+## Personajes del Club — 2026-10-30
+
+Menu → selector → Main. CharacterData en Resources/Characters define a El Pibe (5 vida, velocidad 5, Termo, primera oferta Aerosol) y La Piba del Club (4 vida, velocidad 5,5, Boleadora, primera oferta Termo). La selección estática se conserva al reiniciar/volver al menú y se limpia en SubsystemRegistration. PlayerController aplica vida/velocidad/Animator; WeaponController y UpgradeSelection leen arma y primera oferta del perfil. Main añade únicamente la adquisición del Termo al catálogo. El resto del balance se conserva.
+
+La Piba tiene idle y seis poses originales, conectadas por AnimatorOverrideController. Portraits usan BarrioUiImport en carpeta separada. Generador: Tools/generate_club_art.py; integración: ClubFeaturesSetup; prueba: CharactersCheck.RunBatch. Pasaron personajes y ShortRun para ambos, CombatFeaturesCheck y UiRedesignCheck en copia aislada; la excepción conocida de SearchDatabase se registra por separado. No hay nueva build ni calibración humana. Alcance, reproducción y siguientes pasos de la expansión en Docs/ClubDelBarrio.md.
+
+## Pelota de Potrero — 2026-10-30
+
+Séptima arma disponible para ambos personajes en las mejoras aleatorias, dentro de los cuatro espacios. Projectile añade Ricochet al final del enum: tras cada impacto busca al enemigo vivo no golpeado más cercano a 5 unidades y fija su dirección, con 2 rebotes base (3 impactos), daño 2 y cadencia 1,8 s. Reutiliza `pierce` para impactos adicionales, listas, prefab y pool. Tres mejoras de tres rangos: daño +1, cadencia ×0,9 y rebotes +1 (nuevo UpgradeEffect al final del enum). Main sólo añade cuatro cartas; se conservan los perfiles, primeras ofertas, oleadas y estadísticas anteriores.
+
+Sprite original de 48×48/48 PPU y escala 0,35; icono nativo de 40×40 para HUD/cartas. Generadores existentes del Club/UI; integración acotada ClubFeaturesSetup.ApplyBall. BallCheck pasó adquisición y mejoras para ambos personajes, cadenas de 3/6 blancos únicos, capas, alcance, pool y física/pausa reales; también pasaron CombatFeaturesCheck y UiRedesignCheck (27 texturas, siete armas). Evidencia en TestResults/Club/Pelota; sin build nueva ni calibración humana. Siguiente paso previsto: Canchita. Detalles en Docs/ClubDelBarrio.md.
+
+## Canchita del Club — 2026-10-30
+
+Tercer POI de Main, registrado en QuilomboManager con los mismos ocho puntos y distancias. Seis segundos seguidos en su círculo amarillo recuperan hasta dos de vida y suman 10 de Quilombo una vez por partida; salir antes reinicia, pausa congela y muerte impide recompensa/resurrección. Completar con vida llena también consume el lugar. Health.Heal respeta máximo/bonus y conserva invulnerabilidad; RiskZoneData añade Healing al final del enum. Los umbrales siguen en 10/25: Kiosco + Canchita =20, Parrilla + Canchita =25, tres POIs =35 y multiplicador 1,7 (94 comunes más Jefa en el tope final teórico).
+
+Sprite propio de 192×192 a 48 PPU, escala 1, renderer orden 0/z=1, trigger 1,1. Generador existente del Club e integración ClubFeaturesSetup.ApplyPitch. GameHud separa tres indicadores; RiskZone prioriza desafío activo/recompensa reciente sobre avisos de bonus sin cancelar sus efectos. PitchCheck cubre curación, dos resistencias físicas reales de seis segundos, seis órdenes de visita, reinicio, 100 semillas y tres indicadores en cuatro resoluciones. El fixture espera Update/paso de física, no milisegundos supuestos. Evidencia y límites en Docs/ClubDelBarrio.md y TestResults/Club/Canchita. Sin build ni balance humano. Próximo paso: Patovica.
+
+## Muestra de dirección artística — 2026-10-30
+
+Se conserva Main/Menu, IMGUI, cámara ortográfica 5 y arquitectura de personajes. PlazaPiso se redibujó manteniendo el material repetido y sus 48 PPU efectivos; los cuadros activos del jugador reciben una sombra. GameUi comparte paleta, tipografía, margen y separación; sus labels fijan el color en estados normal/hover/active/focused. HUD aclara XP y niveles de arma. El selector amplía retratos a 176 px y distingue selección amarilla, hover celeste y foco con flecha; Tab también alcanza Volver/A la plaza, arriba vuelve al personaje y abajo enfoca jugar. Sigue acotado a dos personajes.
+
+UiRedesignCheck.RunBatch admite CONURBANO_ART_SAMPLE=1 para capturas comparables y navegación del selector, además de la validación normal existente. Evidencia y limitaciones en Docs/ArtSample; no se modificaron escenas, prefabs, datos de gameplay ni paquetes.
+
+## Corrección visual completa — 2026-10-30
+
+GameUi sigue siendo IMGUI (sin CanvasScaler), pero ahora comparte Atkinson Hyperlegible Regular/Bold local/OFL, con rasterización a píxeles de salida y mínimo físico de 16 px. Superficies carbón/crema y azul gastado; cuerpos legibles, sin ajuste por longitud. HUD, objetivos, selector, menús, mejoras y diagnóstico usan el mismo criterio. La comprobación de texto es sólo de Editor y recorre todas las cartas en cuatro resoluciones.
+
+Generate_plaza conserva literalmente el bloque de pasto/caminos, recupera 42 objetos decorativos y posiciones irregulares de mobiliario y verifica cruce libre, repetición y generación determinista. Generate_club_art añade cuatro detalles al borde de Canchita. No se cambian colliders, material, escala, escenas, datos ni reglas de juego. Evidencia actual en Docs/VisualCorrection; las muestras anteriores permanecen como registro histórico.
+
+## Recursos gratuitos de UI e impactos — 2026-11-03
+
+Primer pase con dos PNG CC0 de Ninja Adventure (Pixel-Boy/AAA), aislados en Assets/ThirdParty/NinjaAdventure con licencia y procedencia. GameUi.FocusPointer comparte la mano de foco de botones/selector; BarrioUiImport incluye únicamente ese PNG externo para IMGUI. HitFlash reemplaza el anillo procedural por cuatro cuadros de 32×32/48 PPU, conserva 0,16 s y reproduce también durante muerte; pausa congela y pool limpia/reinicia. Sprites cacheados una vez, sin allocations por golpe. Se conservan escenas, prefabs, datos, paquetes y ajustes. UiRedesignCheck y CombatFeaturesCheck pasaron en copia aislada: UI/cuatro resoluciones, 32 cartas, cuatro cuadros/pausa/golpe letal/doce ciclos de seis enemigos y regresiones existentes. Un fallo transitorio de resolución Game View se conserva en el primer log; repetición completa aprobada. Sigue la excepción conocida SearchDatabase. Sin build nueva ni prueba mouse/Windows. Detalles y evidencia en Docs/FreeAssetPass.md y TestResults/FreeAssetPass/.
+
+## Rediseño de La Piba — 2026-11-03
+
+Arte propio actualizado mediante image_gen con referencias del Pibe/La Piba; fuente, prompt y adaptación en Docs/PibaRedesign. Se reemplazan sprite, retrato y seis PibaStride conservando los GUID. Nuevo PibaIdle2 y PibaIdle de dos poses/ciclo 0,6 s; walk conserva 10 fps. Ocho cuadros de 48×48/48 PPU, pivote inferior y apoyo uniforme, Point/alfa duro. Generador del Club conserva ahora los PNG editados de La Piba, sin volver al diseño procedural. CharactersCheck pasó en referencia/candidato: importación/idle real de dos poses/walk/pausa/selección/cuatro resoluciones/mejoras/reinicio y ShortRun de ambos. Conserva estadísticas, controladores, escenas, prefabs, paquetes y todos los meta existentes. Sin build ni prueba Windows/mouse; continúa la excepción conocida SearchDatabase. Evidencia en TestResults/PibaRedesign.

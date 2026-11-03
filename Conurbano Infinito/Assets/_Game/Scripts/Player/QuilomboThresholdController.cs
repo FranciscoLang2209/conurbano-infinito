@@ -33,14 +33,14 @@ public sealed class QuilomboThresholdController : MonoBehaviour
         {
             reached10 = true;
             waves.SetQuilomboThresholdBonus(0.15f, false);
-            hud.ShowQuilomboFeedback("EL BARRIO SE ESTÁ PICANDO");
+            hud.ShowQuilomboFeedback("El barrio se está picando");
         }
 
         if (!reached25 && value >= 25f)
         {
             reached25 = true;
             waves.SetQuilomboThresholdBonus(0.35f, false);
-            hud.ShowQuilomboFeedback("SE ESTÁ YENDO TODO AL CARAJO");
+            hud.ShowQuilomboFeedback("Se está yendo todo al carajo");
         }
     }
 }

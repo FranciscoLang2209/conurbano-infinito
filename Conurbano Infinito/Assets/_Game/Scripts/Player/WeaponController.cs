@@ -17,6 +17,7 @@ public sealed class WeaponController : MonoBehaviour
         public float IntervalMultiplier = 1f;
         public float SpeedMultiplier = 1f;
         public int ProjectileCountBonus;
+        public int RicochetBonus;
         public float ExplosionRadiusMultiplier = 1f;
         public readonly List<Projectile> Orbitals = new();
     }
@@ -41,6 +42,7 @@ public sealed class WeaponController : MonoBehaviour
         health = GetComponent<Health>();
         pool = FindFirstObjectByType<ObjectPool>();
         enemyLayerMask = LayerMask.GetMask("Enemy");
+        if (TryGetComponent<PlayerController>(out _)) weapon = CharacterData.Selected.StartingWeapon;
         if (weapon == null || projectilePrefab == null || enemyLayerMask == 0 || pool == null)
         {
             Debug.LogError("WeaponController requiere arma, proyectil, capa Enemy y ObjectPool.", this);
@@ -165,6 +167,13 @@ public sealed class WeaponController : MonoBehaviour
             item.ExplosionRadiusMultiplier *= multiplier;
     }
 
+    public void IncreaseWeaponRicochets(WeaponData data, int amount)
+    {
+        EquippedWeapon item = FindWeapon(data);
+        if (item != null && data.Pattern == WeaponPattern.Ricochet && amount > 0)
+            item.RicochetBonus += amount;
+    }
+
     private void Update()
     {
         if (Time.timeScale == 0f || health.IsDead)
@@ -219,7 +228,7 @@ public sealed class WeaponController : MonoBehaviour
             else
             {
                 projectile.Initialize(shotDirection, GetDamage(item), GetSpeed(item),
-                    data.Pierce, data.Range);
+                    data.Pierce + item.RicochetBonus, data.Range);
             }
         }
     }

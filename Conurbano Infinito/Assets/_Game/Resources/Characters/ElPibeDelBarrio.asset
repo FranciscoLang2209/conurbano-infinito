@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16959c83684d343c095511db85fba3ed, type: 3}
+  m_Name: ElPibeDelBarrio
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  displayName: El Pibe del Barrio
+  description: "El cl\xE1sico: aguante y ataques a distancia."
+  startingHealth: 5
+  movementSpeed: 5
+  startingWeapon: {fileID: 11400000, guid: 06025649deea45fd962e2c2c5a755b6a, type: 2}
+  firstWeaponUpgrade: {fileID: 11400000, guid: 1c72237845f5f40d0adeebb0179675d1, type: 2}
+  portrait: {fileID: 21300000, guid: e58481c59c71649a6bc3c034ce6372e5, type: 3}
+  animatorController: {fileID: 9100000, guid: b51b269645a51484f870a1df7d7a5aaf, type: 2}

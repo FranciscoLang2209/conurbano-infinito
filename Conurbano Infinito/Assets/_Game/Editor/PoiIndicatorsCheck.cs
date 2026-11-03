@@ -33,7 +33,7 @@ public static class PoiIndicatorsCheck
                     throw new Exception("Un indicador quedó en el lado opuesto al POI.");
 
                 Rect separated = (Rect)typeof(GameHud).GetMethod("SeparatePoiPanels", Flags)
-                    .Invoke(null, new object[] { panel, panel, area });
+                    .Invoke(null, new object[] { panel, new[] { panel }, 1, area });
                 if (panel.Overlaps(separated) || !Inside(separated, area))
                     throw new Exception("Dos POIs en el mismo borde se superponen o salen del área.");
             }
@@ -42,14 +42,30 @@ public static class PoiIndicatorsCheck
             foreach (Vector3 position in visible)
                 if (GetPanel(position, size, area, out _))
                     throw new Exception("Un POI visible o detrás de cámara generó un indicador.");
+            foreach (Vector3 first in directions)
+                foreach (Vector3 second in directions)
+                    foreach (Vector3 third in directions)
+                    {
+                        var panels = new Rect[3];
+                        Vector3[] order = { first, second, third };
+                        for (int i = 0; i < 3; i++)
+                        {
+                            GetPanel(order[i], size, area, out Rect preferred);
+                            panels[i] = (Rect)typeof(GameHud).GetMethod("SeparatePoiPanels", Flags)
+                                .Invoke(null, new object[] { preferred, panels, i, area });
+                            if (!Inside(panels[i], area)) throw new Exception("Un indicador de tres salió del área.");
+                            for (int j = 0; j < i; j++)
+                                if (panels[i].Overlaps(panels[j])) throw new Exception("Tres indicadores se superponen.");
+                        }
+                    }
         }
 
         if (Application.isPlaying)
         {
             RiskZone[] zones = UnityEngine.Object.FindObjectsByType<RiskZone>(FindObjectsSortMode.None);
             GameHud hud = UnityEngine.Object.FindFirstObjectByType<GameHud>();
-            if (zones.Length != 2 || hud == null)
-                throw new Exception("Main debe tener HUD, Kiosco y Parrilla.");
+            if (zones.Length != 3 || hud == null)
+                throw new Exception("Main debe tener HUD, Kiosco, Parrilla y Canchita.");
             foreach (RiskZone zone in zones)
             {
                 Camera camera = new SerializedObject(zone).FindProperty("gameCamera")
@@ -76,7 +92,7 @@ public static class PoiIndicatorsCheck
             }
         }
 
-        Debug.Log("POIs: ocho direcciones, tres formatos, límites, separación y visibilidad correctos.");
+        Debug.Log("POIs: ocho direcciones, tres formatos, 1536 distribuciones de tres indicadores, límites y visibilidad correctos.");
     }
 
     private static bool GetPanel(Vector3 viewport, Vector2 size, Rect area, out Rect panel)

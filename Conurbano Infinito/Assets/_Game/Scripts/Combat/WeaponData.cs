@@ -6,7 +6,8 @@ public enum WeaponPattern
     Boleadora,
     Returning,
     Orbiting,
-    Explosive
+    Explosive,
+    Ricochet
 }
 
 [CreateAssetMenu(fileName = "Weapon", menuName = "Conurbano Infinito/Arma")]
@@ -18,6 +19,7 @@ public sealed class WeaponData : ScriptableObject
     [Tooltip("Unidades/segundo; para orbitales, grados/segundo.")]
     [SerializeField, Min(0.01f)] private float projectileSpeed = 8f;
     [SerializeField, Min(1)] private int projectileCount = 1;
+    [Tooltip("Impactos adicionales; para Ricochet, rebotes entre enemigos.")]
     [SerializeField, Min(0)] private int pierce;
     [SerializeField, Min(0.01f)] private float range = 6f;
     [SerializeField, Min(0f)] private float spreadDegrees = 20f;

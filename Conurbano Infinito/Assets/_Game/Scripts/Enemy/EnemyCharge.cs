@@ -18,6 +18,7 @@ public sealed class EnemyCharge : MonoBehaviour
     private Rigidbody2D body;
     private Health health;
     private SpriteRenderer spriteRenderer;
+    private Animator animator;
     private SpriteRenderer warning;
     private GameObject recoveryIndicator;
     private Transform target;
@@ -32,6 +33,7 @@ public sealed class EnemyCharge : MonoBehaviour
         body = GetComponent<Rigidbody2D>();
         health = GetComponent<Health>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        animator = GetComponent<Animator>();
         var indicator = new GameObject("Aviso de embestida");
         indicator.transform.SetParent(transform, false);
         warning = indicator.AddComponent<SpriteRenderer>();
@@ -42,7 +44,7 @@ public sealed class EnemyCharge : MonoBehaviour
         warning.sprite = warningSprite;
         warning.color = new Color(0.95f, 0.77f, 0.28f, 0.5f);
         warning.sortingLayerID = spriteRenderer.sortingLayerID;
-        warning.sortingOrder = spriteRenderer.sortingOrder - 1;
+        warning.sortingOrder = spriteRenderer.sortingOrder + 1;
         indicator.SetActive(false);
         recoveryIndicator = new GameObject("Ventana de contraataque");
         recoveryIndicator.transform.SetParent(transform, false);
@@ -58,7 +60,12 @@ public sealed class EnemyCharge : MonoBehaviour
 
     private void OnEnable()
     {
-        phase = Phase.Chase;
+        if (animator != null)
+        {
+            animator.Rebind();
+            animator.Update(0f);
+        }
+        SetPhase(Phase.Chase);
         nextChargeTime = Time.time + cooldownSeconds;
         spriteRenderer.flipX = false;
     }
@@ -67,7 +74,7 @@ public sealed class EnemyCharge : MonoBehaviour
     {
         target = null;
         targetHealth = null;
-        phase = Phase.Chase;
+        SetPhase(Phase.Chase);
         body.linearVelocity = Vector2.zero;
         warning.gameObject.SetActive(false);
         recoveryIndicator.SetActive(false);
@@ -87,7 +94,7 @@ public sealed class EnemyCharge : MonoBehaviour
         {
             warning.gameObject.SetActive(false);
             recoveryIndicator.SetActive(false);
-            phase = Phase.Chase;
+            SetPhase(Phase.Chase);
             return;
         }
 
@@ -97,7 +104,7 @@ public sealed class EnemyCharge : MonoBehaviour
                 Mathf.Lerp(0.25f, 0.8f, 1f - (phaseEndTime - Time.time) / warningSeconds));
             if (Time.time < phaseEndTime) return;
             warning.gameObject.SetActive(false);
-            phase = Phase.Charge;
+            SetPhase(Phase.Charge);
             phaseEndTime = Time.time + chargeSeconds;
         }
 
@@ -108,7 +115,7 @@ public sealed class EnemyCharge : MonoBehaviour
                 body.MovePosition(body.position + chargeDirection * chargeSpeed * Time.fixedDeltaTime);
                 return;
             }
-            phase = Phase.Recovery;
+            SetPhase(Phase.Recovery);
             phaseEndTime = Time.time + recoverySeconds;
             recoveryIndicator.SetActive(true);
         }
@@ -117,7 +124,7 @@ public sealed class EnemyCharge : MonoBehaviour
         {
             if (Time.time < phaseEndTime) return;
             recoveryIndicator.SetActive(false);
-            phase = Phase.Chase;
+            SetPhase(Phase.Chase);
             nextChargeTime = Time.time + cooldownSeconds;
         }
 
@@ -128,7 +135,7 @@ public sealed class EnemyCharge : MonoBehaviour
         if (Time.time >= nextChargeTime && offset.sqrMagnitude <= triggerDistance * triggerDistance)
         {
             chargeDirection = direction;
-            phase = Phase.Warning;
+            SetPhase(Phase.Warning);
             phaseEndTime = Time.time + warningSeconds;
             float distance = chargeSpeed * chargeSeconds;
             warning.transform.position = body.position + direction * distance / 2f;
@@ -142,5 +149,11 @@ public sealed class EnemyCharge : MonoBehaviour
         }
         body.MovePosition(body.position + direction *
             Mathf.Min(offset.magnitude, movementSpeed * Time.fixedDeltaTime));
+    }
+
+    private void SetPhase(Phase next)
+    {
+        phase = next;
+        if (animator != null) animator.SetInteger("ChargePhase", (int)next);
     }
 }

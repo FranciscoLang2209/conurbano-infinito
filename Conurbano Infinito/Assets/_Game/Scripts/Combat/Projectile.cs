@@ -6,12 +6,12 @@ using UnityEngine;
 public sealed class Projectile : MonoBehaviour
 {
     public static event Action Hit;
-    private enum Flight { Straight, Returning, Orbiting, Explosive }
+    private enum Flight { Straight, Returning, Orbiting, Explosive, Ricochet }
     private const float ExplosionSeconds = 0.22f;
 
     private readonly HashSet<Health> hitTargets = new();
     private readonly Dictionary<Health, float> nextOrbitHit = new();
-    private readonly List<Collider2D> blastTargets = new();
+    private readonly List<Collider2D> areaTargets = new();
     private Rigidbody2D body;
     private SpriteRenderer spriteRenderer;
     private SpriteRenderer visualRenderer;
@@ -84,7 +84,7 @@ public sealed class Projectile : MonoBehaviour
         visualPattern = WeaponPattern.Straight;
         hitTargets.Clear();
         nextOrbitHit.Clear();
-        blastTargets.Clear();
+        areaTargets.Clear();
         if (body != null)
         {
             body.linearVelocity = Vector2.zero;
@@ -127,11 +127,12 @@ public sealed class Projectile : MonoBehaviour
 
     public void Initialize(Vector2 direction, float projectileDamage, float projectileSpeed, int pierce, float range)
     {
-        flight = Flight.Straight;
+        flight = visualPattern == WeaponPattern.Ricochet ? Flight.Ricochet : Flight.Straight;
         damage = projectileDamage;
         remainingHits = pierce + 1;
         maximumDistanceSquared = range * range;
         startPosition = body.position;
+        speed = projectileSpeed;
         body.linearVelocity = direction.normalized * projectileSpeed;
         if (visualPattern == WeaponPattern.Straight) RotateAlongVelocity();
         initialized = true;
@@ -316,12 +317,39 @@ public sealed class Projectile : MonoBehaviour
 
         Hit?.Invoke();
 
-        if (target.IsDead) hitTargets.Remove(target);
+        if (target.IsDead && flight != Flight.Ricochet) hitTargets.Remove(target);
 
-        if (flight == Flight.Straight && --remainingHits <= 0)
+        if (flight == Flight.Ricochet)
+        {
+            if (--remainingHits <= 0 || !Ricochet()) ObjectPool.Release(gameObject);
+        }
+        else if (flight == Flight.Straight && --remainingHits <= 0)
         {
             ObjectPool.Release(gameObject);
         }
+    }
+
+    private bool Ricochet()
+    {
+        var filter = new ContactFilter2D { useTriggers = true };
+        filter.SetLayerMask(LayerMask.GetMask("Enemy"));
+        Physics2D.OverlapCircle(body.position, Mathf.Sqrt(maximumDistanceSquared), filter, areaTargets);
+        Health next = null;
+        float nearest = maximumDistanceSquared;
+        foreach (Collider2D collider in areaTargets)
+        {
+            if (!collider.TryGetComponent(out Health candidate) || candidate.IsDead || hitTargets.Contains(candidate)) continue;
+            float distance = ((Vector2)candidate.transform.position - body.position).sqrMagnitude;
+            if (distance > nearest) continue;
+            next = candidate;
+            nearest = distance;
+        }
+        areaTargets.Clear();
+        if (next == null) return false;
+        Vector2 direction = (Vector2)next.transform.position - body.position;
+        if (direction.sqrMagnitude > 0.0001f) body.linearVelocity = direction.normalized * speed;
+        startPosition = body.position;
+        return true;
     }
 
     private void Explode()
@@ -331,13 +359,13 @@ public sealed class Projectile : MonoBehaviour
         body.simulated = false;
         var filter = new ContactFilter2D { useTriggers = true };
         filter.SetLayerMask(LayerMask.GetMask("Enemy"));
-        Physics2D.OverlapCircle(body.position, blastRadius, filter, blastTargets);
+        Physics2D.OverlapCircle(body.position, blastRadius, filter, areaTargets);
         bool hit = false;
-        foreach (Collider2D collider in blastTargets)
+        foreach (Collider2D collider in areaTargets)
             if (collider.TryGetComponent(out Health target) && hitTargets.Add(target))
                 hit |= target.TakeDamage(damage);
         if (hit) Hit?.Invoke();
-        blastTargets.Clear();
+        areaTargets.Clear();
 
         if (explosionSprite == null)
         {

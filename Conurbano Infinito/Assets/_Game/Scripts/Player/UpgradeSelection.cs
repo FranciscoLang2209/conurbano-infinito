@@ -18,14 +18,25 @@ public sealed class UpgradeSelection : MonoBehaviour
     private readonly List<UpgradeData> available = new();
     private int pendingSelections;
     private bool isShowing;
+    private int focusedOption;
 
     public bool IsShowing => isShowing;
     public IReadOnlyList<UpgradeData> Options => options;
     public IReadOnlyList<UpgradeData> SelectedPassives => selectedPassives;
     public int GetLevel(UpgradeData upgrade) => levels.TryGetValue(upgrade, out int level) ? level : 0;
 
+    public int GetWeaponLevel(WeaponData data)
+    {
+        int level = 1;
+        foreach (var entry in levels)
+            if (entry.Key.TargetWeapon == data && entry.Key.Effect != UpgradeEffect.EquipWeapon)
+                level += entry.Value;
+        return level;
+    }
+
     private void Awake()
     {
+        firstWeaponUpgrade = CharacterData.Selected.FirstWeaponUpgrade;
         if (experience == null || gameManager == null || movement == null || weapon == null ||
             health == null || upgrades == null || upgrades.Length == 0)
         {
@@ -75,6 +86,7 @@ public sealed class UpgradeSelection : MonoBehaviour
 
     private void ShowNext()
     {
+        focusedOption = 0;
         options.Clear();
         available.Clear();
         foreach (UpgradeData upgrade in upgrades)
@@ -117,6 +129,12 @@ public sealed class UpgradeSelection : MonoBehaviour
         }
 
         Keyboard keyboard = Keyboard.current;
+        focusedOption = GameUi.Navigate(focusedOption, options.Count, true);
+        if (GameUi.Confirm)
+        {
+            Select(focusedOption);
+            return;
+        }
         if (keyboard.digit1Key.wasPressedThisFrame || keyboard.numpad1Key.wasPressedThisFrame)
         {
             Select(0);
@@ -169,44 +187,42 @@ public sealed class UpgradeSelection : MonoBehaviour
         Matrix4x4 previous = GameUi.Begin();
         GameUi.Overlay();
 
-        var panel = new Rect((GameUi.Width - 700) / 2f, (GameUi.Height - 420) / 2f, 700, 420);
+        var panel = new Rect(GameUi.SafeArea.center.x - 472, GameUi.SafeArea.center.y - 266, 944, 532);
         GameUi.Sign(panel, GameUi.Petrol);
-        GameUi.Text(new Rect(panel.x + 22, panel.y + 14, 656, 42), "ELEGÍ UNA MEJORA", 28,
+        GameUi.Text(new Rect(panel.x + 22, panel.y + 14, 900, 44), "Elegí una mejora", 28,
             GameUi.Ink, TextAnchor.MiddleCenter);
-        GameUi.Text(new Rect(panel.x + 22, panel.y + 53, 656, 25),
-            "Elegí con el mouse o las teclas 1, 2 y 3", 16, GameUi.Petrol, TextAnchor.MiddleCenter);
+        GameUi.Text(new Rect(panel.x + 22, panel.y + 60, 900, 30),
+            "1 / 2 / 3 · Mouse · Flechas y Enter", 16, GameUi.Petrol, TextAnchor.MiddleCenter);
 
         for (int i = 0; i < options.Count; i++)
         {
             UpgradeData upgrade = options[i];
-            var card = new Rect(panel.x + 22 + i * 220, panel.y + 88, 208, 304);
+            var card = new Rect(panel.x + 22 + i * 304, panel.y + 100, 288, 408);
             bool hover = card.Contains(Event.current.mousePosition);
             var face = new Rect(card.x, card.y - (hover ? 3 : 0), card.width, card.height);
-            GameUi.Card(face, hover);
-            GameUi.Fill(new Rect(face.x + 69, face.y + 24, 70, 70), GameUi.Petrol);
-            Sprite icon = upgrade.Icon != null ? upgrade.Icon :
-                upgrade.TargetWeapon != null ? upgrade.TargetWeapon.ProjectileSprite : null;
+            GameUi.Card(face, hover || focusedOption == i);
+            GameUi.Fill(new Rect(face.x + 109, face.y + 24, 70, 70), GameUi.Petrol);
+            Sprite icon = upgrade.TargetWeapon != null ? GameUi.WeaponIcon(upgrade.TargetWeapon) : upgrade.Icon;
             if (icon != null)
-                GameUi.Icon(icon, new Rect(face.x + 80, face.y + 35, 48, 48));
+                GameUi.Icon(icon, new Rect(face.x + 120, face.y + 35, 48, 48));
             else
-                GameUi.Text(new Rect(face.x + 69, face.y + 24, 70, 70),
-                    (i + 1).ToString(), 28, GameUi.Gold, TextAnchor.MiddleCenter);
+                GameUi.Icon(GameUi.UpgradeIcon(upgrade.Effect), new Rect(face.x + 120, face.y + 35, 48, 48));
             levels.TryGetValue(upgrade, out int level);
-            GameUi.Text(new Rect(face.x + 14, face.y + 111, 180, 56),
-                upgrade.DisplayName, 18, GameUi.Ink, TextAnchor.MiddleCenter, true);
-            GameUi.Fill(new Rect(face.x + 20, face.y + 175, 168, 3), GameUi.Petrol);
-            GameUi.Text(new Rect(face.x + 16, face.y + 189, 176, 57),
-                upgrade.Description, 14, GameUi.Ink, TextAnchor.UpperCenter, true);
-            GameUi.Tag(new Rect(face.x + 43, face.y + 254, 96, 26),
-                $"NIV {level + 1}/{upgrade.MaximumLevel}", GameUi.Gold);
-            GameUi.Key(new Rect(face.x + 151, face.y + 251, 33, 30), (i + 1).ToString());
+            GameUi.Text(new Rect(face.x + 24, face.y + 106, 240, 96),
+                upgrade.DisplayName, 24, GameUi.Ink, TextAnchor.MiddleCenter, true);
+            GameUi.Fill(new Rect(face.x + 24, face.y + 212, 240, 1), GameUi.Petrol);
+            GameUi.Text(new Rect(face.x + 24, face.y + 230, 240, 88),
+                upgrade.Description, 20, GameUi.Ink, TextAnchor.UpperCenter, true);
+            GameUi.Tag(new Rect(face.x + 24, face.y + 360, 164, 30),
+                $"Nivel {level + 1}/{upgrade.MaximumLevel}", GameUi.Gold);
+            GameUi.Key(new Rect(face.x + 222, face.y + 360, 42, 30), (i + 1).ToString());
             if (GUI.Button(card, GUIContent.none, GUIStyle.none))
             {
                 Select(i);
-                GUI.matrix = previous;
+                GameUi.End(previous);
                 GUIUtility.ExitGUI();
             }
         }
-        GUI.matrix = previous;
+        GameUi.End(previous);
     }
 }

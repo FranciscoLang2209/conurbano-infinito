@@ -25,8 +25,7 @@ public static class ShortRunCheck
             WeaponController weapons = Object.FindFirstObjectByType<WeaponController>();
             ExperienceSystem xp = weapons.GetComponent<ExperienceSystem>();
             UpgradeSelection selection = Object.FindFirstObjectByType<UpgradeSelection>();
-            UpgradeData aerosol = AssetDatabase.LoadAssetAtPath<UpgradeData>(
-                "Assets/_Game/Data/Equipar Aerosol.asset");
+            UpgradeData firstWeapon = CharacterData.Selected.FirstWeaponUpgrade;
             Require(game.DurationSeconds == 240f && weapons.EquippedWeaponCount == 1 &&
                 xp.Level == 1 && game.State == GameManager.GameState.Playing,
                 "La partida no empieza limpia o no dura cuatro minutos.");
@@ -35,13 +34,13 @@ public static class ShortRunCheck
             {
                 Require(selection.IsShowing && Time.timeScale == 0f && selection.Options.Count == 3 &&
                     new HashSet<UpgradeData>(selection.Options).Count == 3 &&
-                    new List<UpgradeData>(selection.Options).Contains(aerosol),
-                    "El primer nivel no ofrece tres opciones únicas, incluido Aerosol.");
+                    new List<UpgradeData>(selection.Options).Contains(firstWeapon),
+                    "El primer nivel no ofrece tres opciones únicas, incluida el arma del personaje.");
                 Invoke(selection, "ShowNext");
             }
-            selection.Select(new List<UpgradeData>(selection.Options).IndexOf(aerosol));
-            Require(weapons.IsEquipped(aerosol.TargetWeapon) && !selection.IsShowing && Time.timeScale == 1f,
-                "Seleccionar Aerosol no equipa el arma o no reanuda el juego.");
+            selection.Select(new List<UpgradeData>(selection.Options).IndexOf(firstWeapon));
+            Require(weapons.IsEquipped(firstWeapon.TargetWeapon) && !selection.IsShowing && Time.timeScale == 1f,
+                "La primera adquisición no equipa el arma o no reanuda el juego.");
 
             float elapsed = game.ElapsedSeconds;
             game.PauseGame();
