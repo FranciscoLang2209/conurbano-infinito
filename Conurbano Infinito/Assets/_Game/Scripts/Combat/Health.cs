@@ -23,6 +23,13 @@ public sealed class Health : MonoBehaviour
         remainingHealth = MaximumHealth;
     }
 
+    public void ConfigureStartingHealth(int amount)
+    {
+        if (amount < 1) throw new ArgumentOutOfRangeException(nameof(amount));
+        maximumHealth = amount;
+        ResetForReuse();
+    }
+
     public void ResetForReuse()
     {
         maximumHealthBonus = 0;
@@ -39,6 +46,12 @@ public sealed class Health : MonoBehaviour
 
         maximumHealthBonus += amount;
         remainingHealth += amount;
+    }
+
+    public void Heal(int amount)
+    {
+        if (amount <= 0 || IsDead) return;
+        remainingHealth = Mathf.Min(MaximumHealth, remainingHealth + amount);
     }
 
     public bool TakeDamage(int amount) => TakeDamage((float)amount);

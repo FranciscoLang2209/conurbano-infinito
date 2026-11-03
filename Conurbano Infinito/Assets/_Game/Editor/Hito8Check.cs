@@ -24,9 +24,15 @@ public static class Hito8Check
 
         Health playerHealth = movement.GetComponent<Health>();
         WeaponData termo = LoadWeapon("Termo Balístico", WeaponPattern.Straight);
-        if (!controller.IsEquipped(termo))
+        if (!controller.IsEquipped(termo) || controller.EquippedWeaponCount != 1)
         {
-            throw new System.Exception("Termo Balístico no está equipado al iniciar.");
+            throw new System.Exception("Main debe comenzar con solo Termo Balístico equipado.");
+        }
+        if (controller.CanEquipWeapon(null) || controller.EquipWeapon(null) ||
+            controller.CanEquipWeapon(termo) || controller.EquipWeapon(termo) ||
+            controller.EquippedWeaponCount != 1)
+        {
+            throw new System.Exception("Se aceptó un arma nula o duplicada con espacios libres.");
         }
 
         string[] names = { "Boleadora", "Chancleta Teledirigida", "Fernets Orbitales" };
@@ -50,7 +56,8 @@ public static class Hito8Check
             }
 
             acquisition.Apply(movement, controller, playerHealth);
-            if (!controller.IsEquipped(data) || acquisition.CanOffer(controller) ||
+            if (controller.EquippedWeaponCount != i + 2 ||
+                !controller.IsEquipped(data) || acquisition.CanOffer(controller) ||
                 !damage.CanOffer(controller) || !rate.CanOffer(controller) || !count.CanOffer(controller))
             {
                 throw new System.Exception("La adquisición de " + names[i] + " no habilitó sus estadísticas.");
@@ -91,8 +98,74 @@ public static class Hito8Check
         }
 
         CheckProjectileContacts(controller, movement.transform);
+        CheckWeaponLimit(controller, movement, playerHealth, termo);
 
-        Debug.Log("Hito 8: adquisición, estadísticas, disparo automático y contactos de las tres armas correctos.");
+        Debug.Log("Hito 8: adquisición, estadísticas, disparo automático, contactos y límite de cuatro armas correctos.");
+    }
+
+    private static void CheckWeaponLimit(WeaponController controller, PlayerController movement,
+        Health playerHealth, WeaponData termo)
+    {
+        UpgradeSelection selection = Object.FindFirstObjectByType<UpgradeSelection>();
+        ExperienceSystem experience = movement.GetComponent<ExperienceSystem>();
+        if (selection == null || experience == null)
+            throw new System.Exception("Falta la selección de mejoras o la experiencia.");
+
+        var extraWeapon = ScriptableObject.CreateInstance<WeaponData>();
+        var acquisition = ScriptableObject.CreateInstance<UpgradeData>();
+        FieldInfo upgradesField = typeof(UpgradeSelection).GetField("upgrades",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        var originalUpgrades = (UpgradeData[])upgradesField.GetValue(selection);
+        UpgradeData passive = null;
+        UpgradeData damage = null;
+        try
+        {
+            passive = AssetDatabase.LoadAssetAtPath<UpgradeData>(
+                "Assets/_Game/Data/Chimichurri Casero.asset");
+            damage = LoadUpgrade("Termo Balístico - Daño", termo, UpgradeEffect.WeaponDamage);
+            var serializedAcquisition = new SerializedObject(acquisition);
+            serializedAcquisition.FindProperty("effect").enumValueIndex = (int)UpgradeEffect.EquipWeapon;
+            serializedAcquisition.FindProperty("targetWeapon").objectReferenceValue = extraWeapon;
+            serializedAcquisition.ApplyModifiedPropertiesWithoutUndo();
+
+            if (WeaponController.MaxEquippedWeapons != 4 || controller.EquippedWeaponCount != 4 ||
+                controller.CanEquipWeapon(extraWeapon) || controller.EquipWeapon(extraWeapon) ||
+                acquisition.CanOffer(controller))
+                throw new System.Exception("Se permitió equipar u ofrecer una quinta arma.");
+
+            acquisition.Apply(movement, controller, playerHealth);
+            if (controller.EquippedWeaponCount != 4 || controller.IsEquipped(extraWeapon))
+                throw new System.Exception("Aplicar una adquisición saltó el límite de cuatro armas.");
+
+            if (passive == null || !passive.CanOffer(controller) || !damage.CanOffer(controller))
+                throw new System.Exception("El límite bloqueó una pasiva o una mejora del arma equipada.");
+
+            upgradesField.SetValue(selection, new[] { acquisition, passive, damage });
+            experience.AddExperience(experience.RequiredExperience - experience.CurrentExperience);
+            if (!selection.IsShowing || Time.timeScale != 0f || selection.Options.Count != 2 ||
+                !((selection.Options[0] == passive && selection.Options[1] == damage) ||
+                  (selection.Options[0] == damage && selection.Options[1] == passive)))
+                throw new System.Exception("La selección no filtró la quinta arma conservando las mejoras válidas.");
+
+            selection.Select(0);
+            if (selection.IsShowing || selection.Options.Count != 0 || Time.timeScale != 1f ||
+                controller.EquippedWeaponCount != 4)
+                throw new System.Exception("Elegir una mejora válida no reanudó la partida con cuatro armas.");
+        }
+        finally
+        {
+            // Cerrar también la selección si una comprobación falló antes de elegir.
+            if (selection.IsShowing)
+                for (int i = 0; i < selection.Options.Count; i++)
+                    if (selection.Options[i] == passive || selection.Options[i] == damage)
+                    {
+                        selection.Select(i);
+                        break;
+                    }
+            upgradesField.SetValue(selection, originalUpgrades);
+            Object.Destroy(acquisition);
+            Object.Destroy(extraWeapon);
+        }
     }
 
     private static void CheckProjectileContacts(WeaponController controller, Transform owner)

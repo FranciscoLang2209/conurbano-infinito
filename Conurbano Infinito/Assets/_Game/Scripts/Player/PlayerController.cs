@@ -1,13 +1,14 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[RequireComponent(typeof(Rigidbody2D), typeof(SpriteRenderer))]
+[RequireComponent(typeof(Rigidbody2D), typeof(SpriteRenderer), typeof(Health))]
 public sealed class PlayerController : MonoBehaviour
 {
     [SerializeField] private InputActionAsset inputActions;
     [SerializeField, Min(0f)] private float movementSpeed = 5f;
 
     public float MovementSpeed => movementSpeed;
+    public CharacterData Character { get; private set; }
 
     public void IncreaseMovementSpeed(float multiplier)
     {
@@ -29,6 +30,10 @@ public sealed class PlayerController : MonoBehaviour
         body = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
+        Character = CharacterData.Selected;
+        movementSpeed = Character.MovementSpeed;
+        GetComponent<Health>().ConfigureStartingHealth(Character.StartingHealth);
+        if (animator != null) animator.runtimeAnimatorController = Character.AnimatorController;
         CreatePlaceholderSpriteIfNeeded();
         moveAction = inputActions != null ? inputActions.FindAction("Player/Move", false) : null;
         if (moveAction == null)

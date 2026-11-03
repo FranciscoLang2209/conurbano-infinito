@@ -44,6 +44,8 @@ public sealed class SpawnManager : MonoBehaviour
             Quaternion.identity);
         if (enemy.TryGetComponent(out MosquitoChase mosquito)) mosquito.SetTarget(player);
         if (enemy.TryGetComponent(out EnemyMovement movement)) movement.SetTarget(player);
+        if (enemy.TryGetComponent(out EnemyCharge charge)) charge.SetTarget(player);
+        if (enemy.TryGetComponent(out EnemyRanged ranged)) ranged.SetTarget(player);
         if (enemy.TryGetComponent(out EnemyVisual visual)) visual.SetTarget(player);
         if (enemy.TryGetComponent(out BossAttack attack)) attack.SetTarget(player);
         return enemy.GetComponent<Health>();

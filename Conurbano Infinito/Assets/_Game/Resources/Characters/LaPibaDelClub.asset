@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16959c83684d343c095511db85fba3ed, type: 3}
+  m_Name: LaPibaDelClub
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  displayName: La Piba del Club
+  description: "M\xE1s r\xE1pida, menos aguante. Busc\xE1 espacio."
+  startingHealth: 4
+  movementSpeed: 5.5
+  startingWeapon: {fileID: 11400000, guid: 7848e77546ac4a6693bb0e33cd47dbe2, type: 2}
+  firstWeaponUpgrade: {fileID: 11400000, guid: 3a3e835b1452a4415936fada32033c07, type: 2}
+  portrait: {fileID: 21300000, guid: cb71b1f5d9b304f4e9002cdaf36aa05a, type: 3}
+  animatorController: {fileID: 22100000, guid: cf2ccabe57d924f168a6f9419b66b2a8, type: 2}

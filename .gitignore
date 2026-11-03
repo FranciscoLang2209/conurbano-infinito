@@ -20,5 +20,9 @@ TestResults/
 *.userprefs
 .DS_Store
 
+# Python generated files
+__pycache__/
+*.pyc
+
 # Crash reports
 sysinfo.txt

@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
-// Shared IMGUI drawing for the in-game HUD and modal screens.
+// Shared IMGUI skin keeps the existing scene wiring and input intact.
 public static class GameUi
 {
     public static readonly Color Ink = new Color32(24, 36, 44, 255);
@@ -17,94 +18,140 @@ public static class GameUi
     public static readonly Color Concrete = new Color32(171, 175, 159, 255);
 
     private static readonly Dictionary<int, GUIStyle> Styles = new();
-    private static GUIStyle invisibleButton;
-    private static float scale;
-
+    private static readonly Dictionary<string, Sprite> Sprites = new();
+    private static Font font;
+    private static Font titleFont;
+    private static Sprite focusPointer;
+#if UNITY_EDITOR
+    public static System.Action<Rect, string, GUIStyle> CheckTextLayout;
+#endif
+    public const float Margin = 16f;
+    public const float Gap = 8f;
+    private static float scale = 1f;
     public static float Width => Screen.width / scale;
     public static float Height => Screen.height / scale;
+    public static Rect SafeArea { get; private set; }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetSkin()
+    {
+        Styles.Clear();
+        Sprites.Clear();
+        font = titleFont = null;
+        focusPointer = null;
+#if UNITY_EDITOR
+        CheckTextLayout = null;
+#endif
+    }
+    public static bool Confirm => Keyboard.current != null &&
+        (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame ||
+         Keyboard.current.spaceKey.wasPressedThisFrame);
 
     public static Matrix4x4 Begin()
     {
         Matrix4x4 previous = GUI.matrix;
-        scale = Mathf.Min(Screen.width / 1280f, Screen.height / 720f);
+        scale = Mathf.Max(0.01f, Mathf.Min(Screen.width / 1280f, Screen.height / 720f));
         GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f)) * previous;
+        Rect safe = Screen.safeArea;
+        SafeArea = new Rect(safe.x / scale, (Screen.height - safe.yMax) / scale,
+            safe.width / scale, safe.height / scale);
         return previous;
+    }
+
+    public static void End(Matrix4x4 previous)
+    {
+        GUI.matrix = previous;
+    }
+
+    public static int Navigate(int selected, int count, bool horizontal = false)
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null || count == 0) return selected;
+        bool back = horizontal ? keyboard.leftArrowKey.wasPressedThisFrame : keyboard.upArrowKey.wasPressedThisFrame;
+        bool forward = horizontal ? keyboard.rightArrowKey.wasPressedThisFrame : keyboard.downArrowKey.wasPressedThisFrame;
+        if (keyboard.tabKey.wasPressedThisFrame)
+        {
+            if (keyboard.shiftKey.isPressed) back = true;
+            else forward = true;
+        }
+        return (selected + (forward ? 1 : back ? -1 : 0) + count) % count;
+    }
+
+    public static Sprite Sprite(string name)
+    {
+        if (!Sprites.TryGetValue(name, out Sprite sprite))
+        {
+            sprite = Resources.Load<Sprite>("BarrioUi/" + name);
+            Sprites.Add(name, sprite);
+        }
+        return sprite;
     }
 
     public static void Fill(Rect rect, Color color)
     {
         Color previous = GUI.color;
-        GUI.color = color;
+        GUI.color = DisplayColor(color);
         GUI.DrawTexture(rect, Texture2D.whiteTexture);
         GUI.color = previous;
     }
 
+    public static void Surface(Rect rect, string name)
+    {
+        bool paper = name == "paper";
+        Fill(rect, paper ? Cream : Ink);
+        Outline(rect, paper ? Concrete : Night, 1);
+        if (name == "enamel") Fill(new Rect(rect.x + 1, rect.yMax - 4, rect.width - 2, 3), Night);
+    }
+
     public static void Panel(Rect rect, Color accent)
     {
-        Fill(rect, Ink);
-        Fill(new Rect(rect.x + 2, rect.y + 2, rect.width - 4, rect.height - 4), Muted);
-        Fill(new Rect(rect.x + 4, rect.y + 4, rect.width - 8, rect.height - 8), Night);
-        Fill(new Rect(rect.x + 4, rect.y + 4, rect.width - 8, 4), accent);
-        Fill(new Rect(rect.x, rect.y, 6, 6), Ink);
-        Fill(new Rect(rect.x + rect.width - 6, rect.y, 6, 6), Ink);
-        Fill(new Rect(rect.x, rect.y + rect.height - 6, 6, 6), Ink);
-        Fill(new Rect(rect.x + rect.width - 6, rect.y + rect.height - 6, 6, 6), Ink);
+        Surface(rect, "enamel");
+        Fill(new Rect(rect.x + 1, rect.y + 1, 3, rect.height - 2), accent);
     }
 
     public static void Sign(Rect rect, Color accent)
     {
-        Fill(new Rect(rect.x + 4, rect.y + 4, rect.width, rect.height), Ink);
-        Fill(rect, Ink);
-        Fill(new Rect(rect.x + 3, rect.y + 3, rect.width - 6, rect.height - 6), accent);
-        Fill(new Rect(rect.x + 6, rect.y + 6, rect.width - 12, rect.height - 12), Cream);
-        Fill(new Rect(rect.x + 6, rect.y + 6, rect.width - 12, 4), accent);
-        Rivet(rect.x + 11, rect.y + 13);
-        Rivet(rect.x + rect.width - 15, rect.y + 13);
-        Rivet(rect.x + 11, rect.y + rect.height - 16);
-        Rivet(rect.x + rect.width - 15, rect.y + rect.height - 16);
-    }
-
-    private static void Rivet(float x, float y)
-    {
-        Fill(new Rect(x, y, 5, 5), Ink);
-        Fill(new Rect(x + 1, y + 1, 2, 2), Concrete);
+        Surface(rect, "paper");
+        Fill(new Rect(rect.x + 16, rect.y + 10, 38, 4), accent);
     }
 
     public static void Tag(Rect rect, string label, Color color)
     {
-        Fill(rect, Ink);
-        Fill(new Rect(rect.x + 2, rect.y + 2, rect.width - 4, rect.height - 4), color);
-        Text(rect, label, 12, Ink, TextAnchor.MiddleCenter);
+        Fill(rect, color);
+        Text(rect, label, 16, Ink, TextAnchor.MiddleCenter);
     }
 
     public static void Key(Rect rect, string label)
     {
-        Fill(new Rect(rect.x + 2, rect.y + 2, rect.width, rect.height), Ink);
-        Fill(rect, Petrol);
-        Fill(new Rect(rect.x + 2, rect.y + 2, rect.width - 4, rect.height - 4), Cream);
-        Text(rect, label, 12, Ink, TextAnchor.MiddleCenter);
+        Fill(rect, Ink);
+        Text(rect, label, 16, Cream, TextAnchor.MiddleCenter);
     }
 
     public static void Card(Rect rect, bool selected)
     {
-        Fill(new Rect(rect.x + 4, rect.y + 5, rect.width, rect.height), Ink);
-        Fill(rect, selected ? Gold : Petrol);
-        Fill(new Rect(rect.x + 3, rect.y + 3, rect.width - 6, rect.height - 6), Cream);
-        Fill(new Rect(rect.x + 3, rect.y + 3, rect.width - 6, 5), selected ? Gold : Cyan);
+        Sign(rect, selected ? Gold : Petrol);
+        if (selected)
+        {
+            Fill(new Rect(rect.x, rect.y, rect.width, 4), Gold);
+            Fill(new Rect(rect.x, rect.yMax - 4, rect.width, 4), Gold);
+        }
     }
 
-    public static void Overlay()
+    public static void Outline(Rect rect, Color color, float thickness = 2f)
     {
-        Fill(new Rect(0, 0, Width, Height), new Color(0.04f, 0.12f, 0.12f, 0.62f));
+        Fill(new Rect(rect.x, rect.y, rect.width, thickness), color);
+        Fill(new Rect(rect.x, rect.yMax - thickness, rect.width, thickness), color);
+        Fill(new Rect(rect.x, rect.y, thickness, rect.height), color);
+        Fill(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), color);
     }
+
+    public static void Overlay() => Fill(new Rect(0, 0, Width, Height), new Color(0.035f, 0.08f, 0.1f, 0.88f));
 
     public static void Bar(Rect rect, float fraction, Color color)
     {
         Fill(rect, Ink);
-        Fill(new Rect(rect.x + 2, rect.y + 2, rect.width - 4, rect.height - 4),
-            Shadow);
-        Fill(new Rect(rect.x + 2, rect.y + 2, (rect.width - 4) * Mathf.Clamp01(fraction),
-            rect.height - 4), color);
+        Fill(new Rect(rect.x + 2, rect.y + 2, rect.width - 4, rect.height - 4), Shadow);
+        Fill(new Rect(rect.x + 2, rect.y + 2, (rect.width - 4) * Mathf.Clamp01(fraction), rect.height - 4), color);
     }
 
     public static void Meter(Rect rect, float fraction, Color color, int segments = 12)
@@ -117,57 +164,109 @@ public static class GameUi
             float x = rect.x + 2f + i * (segmentWidth + 2f);
             Fill(new Rect(x, rect.y + 2f, segmentWidth, rect.height - 4f), Shadow);
             float filled = Mathf.Clamp01(fraction - i);
-            if (filled > 0f)
-                Fill(new Rect(x, rect.y + 2f, segmentWidth * filled, rect.height - 4f), color);
+            if (filled > 0f) Fill(new Rect(x, rect.y + 2f, segmentWidth * filled, rect.height - 4f), color);
         }
     }
 
     public static void Text(Rect rect, string value, int size, Color color,
         TextAnchor alignment = TextAnchor.MiddleLeft, bool wrap = false)
     {
-        if (!Styles.TryGetValue(size, out GUIStyle style))
+        // Rasterize the dynamic font at the output resolution, not a stretched reference atlas.
+        int pixels = Mathf.Max(16, Mathf.RoundToInt(Mathf.Max(18, size) * scale));
+        bool heading = size >= 24;
+        int key = pixels * 2 + (heading ? 1 : 0);
+        if (!Styles.TryGetValue(key, out GUIStyle style))
         {
+            font ??= Resources.Load<Font>("BarrioUi/AtkinsonHyperlegible-Regular");
+            titleFont ??= Resources.Load<Font>("BarrioUi/AtkinsonHyperlegible-Bold");
             style = new GUIStyle(GUI.skin.label)
             {
-                fontSize = size,
-                fontStyle = FontStyle.Bold,
-                clipping = TextClipping.Clip
+                font = heading ? titleFont : font, fontSize = pixels, fontStyle = FontStyle.Normal,
+                clipping = TextClipping.Clip, padding = new RectOffset(0, 0, 0, 0)
             };
-            Styles.Add(size, style);
+            Styles.Add(key, style);
         }
-        style.normal.textColor = color;
+        if (style.font.material.mainTexture != null) style.font.material.mainTexture.filterMode = FilterMode.Bilinear;
+        style.normal.textColor = style.hover.textColor = style.active.textColor =
+            style.focused.textColor = DisplayColor(color);
         style.alignment = alignment;
         style.wordWrap = wrap;
-        GUI.Label(rect, value, style);
+        Rect output = new Rect(rect.x * scale, rect.y * scale, rect.width * scale, rect.height * scale);
+        Matrix4x4 previous = GUI.matrix;
+        GUI.matrix = previous * Matrix4x4.Scale(new Vector3(1f / scale, 1f / scale, 1f));
+#if UNITY_EDITOR
+        CheckTextLayout?.Invoke(output, value, style);
+#endif
+        GUI.Label(output, value, style);
+        GUI.matrix = previous;
     }
 
-    public static bool Button(Rect rect, string label, string shortcut = null)
+    public static bool Button(Rect rect, string label, string shortcut = null, bool selected = false, bool primary = false)
     {
-        bool hover = rect.Contains(Event.current.mousePosition);
-        bool pressed = hover && Event.current.type == EventType.MouseDown;
-        Rect face = new Rect(rect.x, rect.y + (pressed ? 3 : hover ? -2 : 0), rect.width, rect.height - 3);
-        Fill(new Rect(rect.x + 3, rect.y + 4, rect.width - 3, rect.height - 3), Ink);
-        Fill(face, Ink);
-        Fill(new Rect(face.x + 3, face.y + 3, face.width - 6, face.height - 6), hover ? Gold : Muted);
-        if (hover) Fill(new Rect(face.x + 8, face.y + 13, 8, 14), Petrol);
-        invisibleButton ??= GUIStyle.none;
-        bool clicked = GUI.Button(rect, GUIContent.none, invisibleButton);
-        Text(new Rect(face.x + 20, face.y + 3, face.width - 40, face.height - 6),
-            label, 18, Ink, TextAnchor.MiddleCenter);
-        if (shortcut != null)
-        {
-            float keyWidth = shortcut.Length > 3 ? 58 : shortcut.Length > 1 ? 38 : 27;
-            Key(new Rect(face.x + face.width - keyWidth - 12, face.y + 8, keyWidth, 25), shortcut);
-        }
+        bool hovered = GUI.enabled && rect.Contains(Event.current.mousePosition);
+        bool clicked = GUI.Button(rect, GUIContent.none, GUIStyle.none);
+        Fill(rect, !GUI.enabled ? Shadow : selected || primary ? Gold : hovered ? Cream : Night);
+        Outline(rect, selected || primary ? Gold : hovered ? Cream : Concrete, 1);
+        Color text = !GUI.enabled ? Concrete : selected || primary || hovered ? Ink : Cream;
+        if (selected) FocusPointer(new Rect(rect.x + 10, rect.center.y - 13, 26, 26));
+        float keyWidth = shortcut == null ? 0 : shortcut.Length > 3 ? 60 : 38;
+        Text(new Rect(rect.x + 42, rect.y, rect.width - 58 - keyWidth, rect.height), label, 23, text);
+        if (shortcut != null) Key(new Rect(rect.xMax - keyWidth - 12, rect.center.y - 13, keyWidth, 26), shortcut);
         return clicked;
     }
 
-    public static void Icon(Sprite sprite, Rect rect)
+    public static void FocusPointer(Rect rect)
+    {
+        focusPointer ??= Resources.Load<Sprite>("NinjaAdventure/focus");
+        rect.x += Mathf.Floor(Mathf.PingPong(Time.unscaledTime * 2, 2)) * 2;
+        Matrix4x4 previous = GUI.matrix;
+        GUIUtility.RotateAroundPivot(-90f, rect.center);
+        Icon(focusPointer, rect, 2f);
+        GUI.matrix = previous;
+    }
+
+    public static void Icon(string name, Rect rect) => Icon(Sprite(name), rect);
+    public static void Icon(string name, Rect rect, Color tint)
+    {
+        Color previous = GUI.color;
+        GUI.color = DisplayColor(tint);
+        Icon(name, rect);
+        GUI.color = previous;
+    }
+
+    public static void Icon(Sprite sprite, Rect rect, float maxScale = 1f)
     {
         if (sprite == null) return;
         Rect source = sprite.textureRect;
         Texture2D texture = sprite.texture;
+        // Keep small sprites at their authored size, including inside larger upgrade cards.
+        float fit = Mathf.Min(maxScale, Mathf.Min(rect.width / source.width, rect.height / source.height));
+        Vector2 size = source.size * fit;
+        rect = new Rect(rect.center - size * 0.5f, size);
+        rect.x = Mathf.Round(rect.x * scale) / scale;
+        rect.y = Mathf.Round(rect.y * scale) / scale;
         GUI.DrawTextureWithTexCoords(rect, texture, new Rect(source.x / texture.width,
             source.y / texture.height, source.width / texture.width, source.height / texture.height));
     }
+
+    public static Sprite WeaponIcon(WeaponData weapon)
+    {
+        string name = weapon.name switch
+        {
+            "Termo Balístico" => "weapon_thermos",
+            "Aerosol" => "weapon_aerosol",
+            "Boleadora" => "weapon_boleadora",
+            "Chancleta Teledirigida" => "weapon_slipper",
+            "Fernets Orbitales" => "weapon_fernet",
+            "Petardo" => "weapon_firecracker",
+            "Pelota de Potrero" => "weapon_ball",
+            _ => null
+        };
+        return name == null ? weapon.ProjectileSprite : Sprite(name);
+    }
+
+    public static string UpgradeIcon(UpgradeEffect effect) => effect == UpgradeEffect.MaximumHealth ? "heart" :
+        effect == UpgradeEffect.MovementSpeed ? "shoe" : effect == UpgradeEffect.FireInterval ? "rapid" : "fist";
+
+    private static Color DisplayColor(Color color) => QualitySettings.activeColorSpace == ColorSpace.Linear ? color.linear : color;
 }

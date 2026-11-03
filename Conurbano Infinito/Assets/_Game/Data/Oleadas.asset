@@ -13,59 +13,77 @@ MonoBehaviour:
   m_Name: Oleadas
   m_EditorClassIdentifier: Assembly-CSharp::WaveData
   phases:
-  - startSeconds: 0
-    spawnIntervalSeconds: 3
-    maximumAlive: 25
+  - title: "Conoc\xE9 la plaza"
+    startSeconds: 0
+    spawnIntervalSeconds: 2.4
+    maximumAlive: 18
     enemies:
     - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
       weight: 1
-  - startSeconds: 120
-    spawnIntervalSeconds: 2.6
-    maximumAlive: 35
+  - title: Se suman las palomas
+    startSeconds: 30
+    spawnIntervalSeconds: 1.55
+    maximumAlive: 26
     enemies:
     - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
       weight: 3
     - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
       weight: 1
-  - startSeconds: 240
-    spawnIntervalSeconds: 1.8
-    maximumAlive: 45
+  - title: "Perros: esquiv\xE1 de costado"
+    startSeconds: 60
+    spawnIntervalSeconds: 1.05
+    maximumAlive: 36
+    enemies:
+    - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
+      weight: 3
+    - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
+      weight: 2
+    - prefab: {fileID: 5760062812552525264, guid: a4f11f1c45e2e4cc7b607ec97fe87553, type: 3}
+      weight: 1
+  - title: "Gomeras: sal\xED de la l\xEDnea roja"
+    startSeconds: 120
+    spawnIntervalSeconds: 0.75
+    maximumAlive: 46
+    enemies:
+    - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
+      weight: 2
+    - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
+      weight: 2
+    - prefab: {fileID: 1451185801548183257, guid: a6e064ca9a784cf6bcd12bc0582b2003, type: 3}
+      weight: 1
+    - prefab: {fileID: 5760062812552525264, guid: a4f11f1c45e2e4cc7b607ec97fe87553, type: 3}
+      weight: 1
+    - prefab: {fileID: 1838912690251915265, guid: 3b9a2e3febba7485293411f8a62f9354, type: 3}
+      weight: 1
+  - title: "Lleg\xF3 La Jefa"
+    startSeconds: 180
+    spawnIntervalSeconds: 1.15
+    maximumAlive: 40
+    enemies:
+    - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
+      weight: 2
+    - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
+      weight: 2
+    - prefab: {fileID: 1451185801548183257, guid: a6e064ca9a784cf6bcd12bc0582b2003, type: 3}
+      weight: 2
+    - prefab: {fileID: 5760062812552525264, guid: a4f11f1c45e2e4cc7b607ec97fe87553, type: 3}
+      weight: 1
+    - prefab: {fileID: 1838912690251915265, guid: 3b9a2e3febba7485293411f8a62f9354, type: 3}
+      weight: 1
+  - title: "\xDAltimos 30 segundos"
+    startSeconds: 210
+    spawnIntervalSeconds: 0.57
+    maximumAlive: 55
     enemies:
     - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
       weight: 3
     - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
       weight: 2
     - prefab: {fileID: 1451185801548183257, guid: a6e064ca9a784cf6bcd12bc0582b2003, type: 3}
+      weight: 2
+    - prefab: {fileID: 5760062812552525264, guid: a4f11f1c45e2e4cc7b607ec97fe87553, type: 3}
       weight: 1
-  - startSeconds: 300
-    spawnIntervalSeconds: 2.2
-    maximumAlive: 50
-    enemies:
-    - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
-      weight: 2
-    - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
-      weight: 2
-    - prefab: {fileID: 1451185801548183257, guid: a6e064ca9a784cf6bcd12bc0582b2003, type: 3}
+    - prefab: {fileID: 1838912690251915265, guid: 3b9a2e3febba7485293411f8a62f9354, type: 3}
       weight: 1
-  - startSeconds: 360
-    spawnIntervalSeconds: 1.7
-    maximumAlive: 65
-    enemies:
-    - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
-      weight: 2
-    - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
-      weight: 2
-    - prefab: {fileID: 1451185801548183257, guid: a6e064ca9a784cf6bcd12bc0582b2003, type: 3}
-      weight: 2
-  - startSeconds: 540
-    spawnIntervalSeconds: 0.65
-    maximumAlive: 90
-    enemies:
-    - prefab: {fileID: 1451185801548183257, guid: f87f5b78a5a0b487b9616441e40308e3, type: 3}
-      weight: 3
-    - prefab: {fileID: 1451185801548183257, guid: 1691568f5eb74d409c86de876531fa83, type: 3}
-      weight: 2
-    - prefab: {fileID: 1451185801548183257, guid: a6e064ca9a784cf6bcd12bc0582b2003, type: 3}
-      weight: 2
-  bossSpawnSeconds: 300
+  bossSpawnSeconds: 180
   bossPrefab: {fileID: 1451185801548183257, guid: 169d8f1aa34a4d3c987a178873c808ed, type: 3}

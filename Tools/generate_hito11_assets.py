@@ -97,6 +97,7 @@ def effect(start, end, seconds, character=0):
 
 for name, start, end, duration, noise in (
     ("Impacto", 230, 95, 0.11, 0.2),
+    ("Aviso", 740, 1100, 0.22, 0),
     ("Experiencia", 620, 900, 0.12, 0),
     ("SubirNivel", 480, 960, 0.34, 0),
     ("Daño", 260, 80, 0.28, 0.3),

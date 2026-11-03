@@ -10,7 +10,9 @@ public enum UpgradeEffect
     WeaponDamage,
     WeaponFireInterval,
     WeaponProjectileCount,
-    WeaponProjectileSpeed
+    WeaponProjectileSpeed,
+    WeaponExplosionRadius,
+    WeaponRicochets
 }
 
 [CreateAssetMenu(fileName = "Upgrade", menuName = "Conurbano Infinito/Mejora")]
@@ -35,13 +37,15 @@ public sealed class UpgradeData : ScriptableObject
     {
         if (effect == UpgradeEffect.EquipWeapon)
         {
-            return targetWeapon != null && !weapon.IsEquipped(targetWeapon);
+            return weapon.CanEquipWeapon(targetWeapon);
         }
 
         if (effect == UpgradeEffect.WeaponDamage || effect == UpgradeEffect.WeaponFireInterval ||
-            effect == UpgradeEffect.WeaponProjectileCount || effect == UpgradeEffect.WeaponProjectileSpeed)
+            effect == UpgradeEffect.WeaponProjectileCount || effect == UpgradeEffect.WeaponProjectileSpeed ||
+            effect == UpgradeEffect.WeaponExplosionRadius || effect == UpgradeEffect.WeaponRicochets)
         {
-            return targetWeapon != null && weapon.IsEquipped(targetWeapon);
+            return targetWeapon != null && weapon.IsEquipped(targetWeapon) &&
+                (effect != UpgradeEffect.WeaponRicochets || targetWeapon.Pattern == WeaponPattern.Ricochet);
         }
 
         return true;
@@ -77,6 +81,12 @@ public sealed class UpgradeData : ScriptableObject
                 break;
             case UpgradeEffect.WeaponProjectileSpeed:
                 weapon.IncreaseWeaponProjectileSpeed(targetWeapon, amount);
+                break;
+            case UpgradeEffect.WeaponExplosionRadius:
+                weapon.IncreaseWeaponExplosionRadius(targetWeapon, amount);
+                break;
+            case UpgradeEffect.WeaponRicochets:
+                weapon.IncreaseWeaponRicochets(targetWeapon, Mathf.RoundToInt(amount));
                 break;
         }
     }

@@ -4,6 +4,8 @@ using UnityEngine;
 [RequireComponent(typeof(Health))]
 public sealed class WeaponController : MonoBehaviour
 {
+    public const int MaxEquippedWeapons = 4;
+
     [SerializeField] private WeaponData weapon;
     [SerializeField] private Projectile projectilePrefab;
 
@@ -15,6 +17,8 @@ public sealed class WeaponController : MonoBehaviour
         public float IntervalMultiplier = 1f;
         public float SpeedMultiplier = 1f;
         public int ProjectileCountBonus;
+        public int RicochetBonus;
+        public float ExplosionRadiusMultiplier = 1f;
         public readonly List<Projectile> Orbitals = new();
     }
 
@@ -38,6 +42,7 @@ public sealed class WeaponController : MonoBehaviour
         health = GetComponent<Health>();
         pool = FindFirstObjectByType<ObjectPool>();
         enemyLayerMask = LayerMask.GetMask("Enemy");
+        if (TryGetComponent<PlayerController>(out _)) weapon = CharacterData.Selected.StartingWeapon;
         if (weapon == null || projectilePrefab == null || enemyLayerMask == 0 || pool == null)
         {
             Debug.LogError("WeaponController requiere arma, proyectil, capa Enemy y ObjectPool.", this);
@@ -65,9 +70,12 @@ public sealed class WeaponController : MonoBehaviour
 
     public bool IsEquipped(WeaponData data) => FindWeapon(data) != null;
 
+    public bool CanEquipWeapon(WeaponData data) =>
+        data != null && !IsEquipped(data) && equipped.Count < MaxEquippedWeapons;
+
     public bool EquipWeapon(WeaponData data)
     {
-        if (data == null || IsEquipped(data))
+        if (!CanEquipWeapon(data))
         {
             return false;
         }
@@ -151,6 +159,21 @@ public sealed class WeaponController : MonoBehaviour
         }
     }
 
+    public void IncreaseWeaponExplosionRadius(WeaponData data, float multiplier)
+    {
+        EquippedWeapon item = FindWeapon(data);
+        if (item != null && data.Pattern == WeaponPattern.Explosive &&
+            multiplier > 1f && !float.IsInfinity(multiplier))
+            item.ExplosionRadiusMultiplier *= multiplier;
+    }
+
+    public void IncreaseWeaponRicochets(WeaponData data, int amount)
+    {
+        EquippedWeapon item = FindWeapon(data);
+        if (item != null && data.Pattern == WeaponPattern.Ricochet && amount > 0)
+            item.RicochetBonus += amount;
+    }
+
     private void Update()
     {
         if (Time.timeScale == 0f || health.IsDead)
@@ -192,7 +215,12 @@ public sealed class WeaponController : MonoBehaviour
                 Quaternion.identity).GetComponent<Projectile>();
             projectile.SetAppearance(data.ProjectileSprite, data.ProjectileColor,
                 data.ProjectileScale, data.Pattern);
-            if (data.Pattern == WeaponPattern.Returning)
+            if (data.Pattern == WeaponPattern.Explosive)
+            {
+                projectile.InitializeExplosive(target.transform.position, GetDamage(item),
+                    GetSpeed(item), data.ExplosionRadius * item.ExplosionRadiusMultiplier);
+            }
+            else if (data.Pattern == WeaponPattern.Returning)
             {
                 projectile.InitializeReturning(transform, shotDirection, GetDamage(item),
                     GetSpeed(item), data.Range);
@@ -200,7 +228,7 @@ public sealed class WeaponController : MonoBehaviour
             else
             {
                 projectile.Initialize(shotDirection, GetDamage(item), GetSpeed(item),
-                    data.Pierce, data.Range);
+                    data.Pierce + item.RicochetBonus, data.Range);
             }
         }
     }

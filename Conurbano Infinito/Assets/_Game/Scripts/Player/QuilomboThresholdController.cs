@@ -6,8 +6,8 @@ public sealed class QuilomboThresholdController : MonoBehaviour
     [SerializeField] private WaveDirector waves;
     [SerializeField] private GameHud hud;
 
+    private bool reached10;
     private bool reached25;
-    private bool reached50;
 
     private void Awake()
     {
@@ -29,18 +29,18 @@ public sealed class QuilomboThresholdController : MonoBehaviour
 
     private void OnQuilomboChanged(float value)
     {
+        if (!reached10 && value >= 10f)
+        {
+            reached10 = true;
+            waves.SetQuilomboThresholdBonus(0.15f, false);
+            hud.ShowQuilomboFeedback("El barrio se está picando");
+        }
+
         if (!reached25 && value >= 25f)
         {
             reached25 = true;
-            waves.SetQuilomboThresholdBonus(0.15f, false);
-            hud.ShowQuilomboFeedback("EL BARRIO SE ESTÁ PICANDO");
-        }
-
-        if (!reached50 && value >= 50f)
-        {
-            reached50 = true;
-            waves.SetQuilomboThresholdBonus(0.35f, true);
-            hud.ShowQuilomboFeedback("SE ESTÁ YENDO TODO AL CARAJO");
+            waves.SetQuilomboThresholdBonus(0.35f, false);
+            hud.ShowQuilomboFeedback("Se está yendo todo al carajo");
         }
     }
 }

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public enum RiskZoneReward { Damage, CollectionRadius }
+public enum RiskZoneReward { Damage, CollectionRadius, Healing }
 
 [CreateAssetMenu(fileName = "Zona de riesgo", menuName = "Conurbano Infinito/Zona de riesgo")]
 public sealed class RiskZoneData : ScriptableObject
@@ -14,6 +14,7 @@ public sealed class RiskZoneData : ScriptableObject
     [SerializeField, Min(1f)] private float collectionRadiusMultiplier = 1f;
     [SerializeField, Min(0f)] private float rewardDuration;
     [SerializeField] private string timerLabel;
+    [SerializeField, Min(1)] private int healingAmount = 2;
 
     public string DisplayName => displayName;
     public string CompletionMessage => completionMessage;
@@ -22,11 +23,21 @@ public sealed class RiskZoneData : ScriptableObject
     public float DamageMultiplier => damageMultiplier;
     public float RewardDuration => rewardDuration;
     public string TimerLabel => timerLabel;
-    public bool HasReward => reward == RiskZoneReward.Damage
-        ? damageMultiplier > 1f : collectionRadiusMultiplier > 1f;
-    public string RewardText => reward == RiskZoneReward.Damage
-        ? $"+{(damageMultiplier - 1f) * 100f:0.#}% DAÑO"
-        : $"RADIO DE RECOLECCIÓN +{(collectionRadiusMultiplier - 1f) * 100f:0.#}%";
+    public int HealingAmount => healingAmount;
+    public bool HasReward => reward switch
+    {
+        RiskZoneReward.Damage => damageMultiplier > 1f,
+        RiskZoneReward.CollectionRadius => collectionRadiusMultiplier > 1f,
+        RiskZoneReward.Healing => healingAmount > 0,
+        _ => false
+    };
+    public string RewardText => reward switch
+    {
+        RiskZoneReward.Damage => $"+{(damageMultiplier - 1f) * 100f:0.#}% de daño",
+        RiskZoneReward.CollectionRadius => $"Radio de recolección +{(collectionRadiusMultiplier - 1f) * 100f:0.#}%",
+        RiskZoneReward.Healing => $"Hasta +{healingAmount} de vida",
+        _ => ""
+    };
 
     public void ApplyReward(PlayerController player)
     {
@@ -35,5 +46,7 @@ public sealed class RiskZoneData : ScriptableObject
         else if (reward == RiskZoneReward.CollectionRadius)
             player.GetComponent<ExperienceSystem>().ApplyCollectionRadiusMultiplier(
                 collectionRadiusMultiplier, rewardDuration);
+        else if (reward == RiskZoneReward.Healing)
+            player.GetComponent<Health>().Heal(healingAmount);
     }
 }

@@ -1,0 +1,15 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: LaPibaDelClub
+  m_Controller: {fileID: 9100000, guid: b51b269645a51484f870a1df7d7a5aaf, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: eabd400af9fd24ce6af3bf0e76f7b497, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: b51b6c7b2fd044de485b8a58d5de79fa, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: c36a208128ba8401c9426e246ed26128, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 053ed8542a20342f8b03d325efbbdef4, type: 2}

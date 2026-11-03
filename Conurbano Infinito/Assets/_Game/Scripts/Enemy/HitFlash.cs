@@ -10,6 +10,8 @@ public sealed class HitFlash : MonoBehaviour
     private Health health;
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D body;
+    private Animator animator;
+    private bool normalAnimation;
     private SpriteRenderer impact;
     private Color normalColor;
     private Vector3 normalScale;
@@ -19,13 +21,15 @@ public sealed class HitFlash : MonoBehaviour
     private float deathStartTime;
     private float impactStartTime;
     private bool dying;
-    private static Sprite impactSprite;
+    private static Sprite[] impactFrames;
 
     private void Awake()
     {
         health = GetComponent<Health>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         body = GetComponent<Rigidbody2D>();
+        animator = GetComponent<Animator>();
+        if (animator != null) normalAnimation = animator.enabled;
         normalColor = spriteRenderer.color;
         normalScale = transform.localScale;
         normalRotation = transform.localRotation;
@@ -47,6 +51,7 @@ public sealed class HitFlash : MonoBehaviour
         transform.localScale = normalScale;
         transform.localRotation = normalRotation;
         if (body != null) body.simulated = normalSimulation;
+        if (animator != null) animator.enabled = normalAnimation;
         if (impact != null)
         {
             impact.gameObject.SetActive(false);
@@ -60,39 +65,43 @@ public sealed class HitFlash : MonoBehaviour
 
     private void Update()
     {
+        if (Time.timeScale == 0f) return;
+        if (impact != null && impact.gameObject.activeSelf)
+        {
+            float progress = Mathf.Clamp01((Time.time - impactStartTime) / ImpactSeconds);
+            impact.sprite = impactFrames[Mathf.Min((int)(progress * impactFrames.Length), impactFrames.Length - 1)];
+            if (progress >= 1f) impact.gameObject.SetActive(false);
+        }
         if (dying)
         {
-            float progress = Mathf.Clamp01((Time.unscaledTime - deathStartTime) / DeathSeconds);
+            float progress = Mathf.Clamp01((Time.time - deathStartTime) / DeathSeconds);
             Color color = normalColor;
             color.a *= 1f - progress;
             spriteRenderer.color = color;
+            transform.localScale = Vector3.Scale(normalScale,
+                new Vector3(Mathf.Lerp(1.12f, 0.35f, progress), Mathf.Lerp(0.85f, 0.35f, progress), 1f));
+            transform.localRotation = normalRotation * Quaternion.Euler(0, 0,
+                (spriteRenderer.flipX ? 24f : -24f) * progress);
             if (progress >= 1f) ObjectPool.Release(gameObject);
             return;
         }
 
-        if (endTime > 0f && Time.unscaledTime >= endTime)
+        if (endTime > 0f && Time.time >= endTime)
         {
             spriteRenderer.color = normalColor;
             endTime = 0f;
-        }
-
-        if (impact != null && impact.gameObject.activeSelf)
-        {
-            float progress = Mathf.Clamp01((Time.unscaledTime - impactStartTime) / ImpactSeconds);
-            impact.transform.localScale = Vector3.one * Mathf.Lerp(0.2f, 0.8f, progress);
-            impact.color = new Color(1f, 0.85f, 0.3f, 1f - progress);
-            if (progress >= 1f) impact.gameObject.SetActive(false);
         }
     }
 
     private void Flash()
     {
         spriteRenderer.color = Color.white;
-        endTime = Time.unscaledTime + durationSeconds;
+        endTime = Time.time + durationSeconds;
         if (impact == null) CreateImpact();
-        impact.transform.localScale = Vector3.one * 0.2f;
-        impact.color = new Color(1f, 0.85f, 0.3f, 1f);
-        impactStartTime = Time.unscaledTime;
+        impact.sprite = impactFrames[0];
+        impact.transform.localScale = Vector3.one;
+        impact.color = Color.white;
+        impactStartTime = Time.time;
         impact.gameObject.SetActive(true);
     }
 
@@ -100,32 +109,27 @@ public sealed class HitFlash : MonoBehaviour
     {
         if (!isActiveAndEnabled) return false;
         dying = true;
-        deathStartTime = Time.unscaledTime;
+        deathStartTime = Time.time;
         if (body != null) body.simulated = false;
+        if (animator != null) animator.enabled = false;
         return true;
     }
 
     private void CreateImpact()
     {
-        if (impactSprite == null)
+        if (impactFrames == null || impactFrames[0] == null)
         {
-            var texture = new Texture2D(16, 16, TextureFormat.RGBA32, false);
-            texture.filterMode = FilterMode.Point;
-            for (int y = 0; y < 16; y++)
-            for (int x = 0; x < 16; x++)
-            {
-                float radius = new Vector2(x - 7.5f, y - 7.5f).magnitude;
-                texture.SetPixel(x, y, radius >= 5f && radius <= 7f ? Color.white : Color.clear);
-            }
-            texture.Apply();
-            impactSprite = Sprite.Create(texture, new Rect(0, 0, 16, 16),
-                new Vector2(0.5f, 0.5f), 16f);
+            var texture = Resources.Load<Texture2D>("NinjaAdventure/impact");
+            impactFrames = new Sprite[4];
+            for (int i = 0; i < impactFrames.Length; i++)
+                impactFrames[i] = Sprite.Create(texture, new Rect(i * 32, 0, 32, 32),
+                    new Vector2(0.5f, 0.5f), 48f);
         }
 
         var effect = new GameObject("Impacto visual");
         effect.transform.SetParent(transform, false);
         impact = effect.AddComponent<SpriteRenderer>();
-        impact.sprite = impactSprite;
+        impact.sprite = impactFrames[0];
         impact.sortingLayerID = spriteRenderer.sortingLayerID;
         impact.sortingOrder = spriteRenderer.sortingOrder + 1;
         effect.SetActive(false);

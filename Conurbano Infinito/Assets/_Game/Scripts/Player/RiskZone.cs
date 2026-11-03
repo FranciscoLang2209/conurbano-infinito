@@ -11,9 +11,14 @@ public sealed class RiskZone : MonoBehaviour
 
     public ZoneState State { get; private set; }
     public float Progress { get; private set; }
+    public bool HasPendingReward => !rewardStarted;
+    public string DisplayName => data.DisplayName;
+    public Vector3 ViewportPosition => gameCamera.WorldToViewportPoint(transform.position);
 
     private bool playerInside;
     private PlayerController player;
+    private Health playerHealth;
+    private RiskZone[] zones;
     private float feedbackUntil;
     private float rewardEndTime;
     private bool rewardStarted;
@@ -43,6 +48,8 @@ public sealed class RiskZone : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (State != ZoneState.Inactive || !other.TryGetComponent(out PlayerController player)) return;
+        playerHealth = player.GetComponent<Health>();
+        if (playerHealth == null || playerHealth.IsDead) return;
         this.player = player;
         playerInside = true;
         State = ZoneState.Active;
@@ -54,6 +61,7 @@ public sealed class RiskZone : MonoBehaviour
         if (!other.TryGetComponent(out PlayerController _)) return;
         playerInside = false;
         player = null;
+        playerHealth = null;
         if (rewardStarted || State == ZoneState.Completed) return;
         Progress = 0f;
         State = ZoneState.Inactive;
@@ -63,6 +71,7 @@ public sealed class RiskZone : MonoBehaviour
     {
         playerInside = false;
         player = null;
+        playerHealth = null;
         if (rewardStarted || State == ZoneState.Completed) return;
         Progress = 0f;
         State = ZoneState.Inactive;
@@ -76,7 +85,7 @@ public sealed class RiskZone : MonoBehaviour
             if (Time.time >= rewardEndTime) Complete();
             return;
         }
-        if (!playerInside) return;
+        if (!playerInside || playerHealth == null || playerHealth.IsDead) return;
         Progress = Mathf.Min(data.RequiredDuration, Progress + Time.deltaTime);
         if (Progress >= data.RequiredDuration) StartReward();
     }
@@ -104,44 +113,65 @@ public sealed class RiskZone : MonoBehaviour
         GUI.depth = 19;
         Matrix4x4 previous = GameUi.Begin();
         Vector3 screen = gameCamera.WorldToScreenPoint(transform.position + Vector3.up * 1.4f);
-        if (screen.z > 0f)
+        Vector3 viewport = ViewportPosition;
+        if (HasPendingReward && viewport.z > 0f && viewport.x >= 0f && viewport.x <= 1f &&
+            viewport.y >= 0f && viewport.y <= 1f)
         {
-            float x = screen.x * GameUi.Width / Screen.width - 100f;
+            float x = screen.x * GameUi.Width / Screen.width - 116f;
             float y = GameUi.Height - screen.y * GameUi.Height / Screen.height;
-            GameUi.Panel(new Rect(x, y, 200, 27), State == ZoneState.Completed ? GameUi.Cyan : GameUi.Gold);
-            GameUi.Text(new Rect(x + 5, y + 2, 190, 23),
-                State == ZoneState.Completed ? $"{data.DisplayName}  ✓" : data.DisplayName,
-                14, GameUi.Cream, TextAnchor.MiddleCenter);
+            // World labels yield to the HUD, equipment and POI reward notice.
+            if (y >= GameUi.SafeArea.y + 188 && y < GameUi.SafeArea.yMax - 158)
+            {
+                x = Mathf.Clamp(x, GameUi.SafeArea.x + 16, GameUi.SafeArea.xMax - 248);
+                GameUi.Fill(new Rect(x, y, 232, 34), new Color(0.09f, 0.14f, 0.17f, 0.8f));
+                GameUi.Icon("pin", new Rect(x + 8, y + 9, 16, 16));
+                GameUi.Text(new Rect(x + 32, y + 3, 192, 28), data.DisplayName,
+                    18, GameUi.Cream, TextAnchor.MiddleLeft);
+            }
         }
 
-        if (State == ZoneState.Active || Time.unscaledTime < feedbackUntil)
+        if ((State == ZoneState.Active || Time.unscaledTime < feedbackUntil) && HasNoticePriority())
         {
             bool completed = State == ZoneState.Completed;
             bool showReward = rewardStarted && data.HasReward;
-            float panelHeight = showReward ? 110f : 94f;
-            if (!completed && rewardStarted) panelHeight += 26f;
-            var panel = new Rect((GameUi.Width - 320f) / 2f,
-                GameUi.Height - panelHeight - 26f, 320f, panelHeight);
-            GameUi.Panel(panel, GameUi.Gold);
-            GameUi.Text(new Rect(panel.x + 12f, panel.y + 7f, 296f, 27f),
-                rewardStarted ? data.CompletionMessage : data.DisplayName.ToUpperInvariant(),
-                20, GameUi.Cream, TextAnchor.MiddleCenter);
-            GameUi.Text(new Rect(panel.x + 12f, panel.y + 39f, 296f, 27f),
-                rewardStarted ? $"+{data.QuilomboReward:0.#} QUILOMBO" :
-                    $"Resistiendo... {Progress:0.0} / {data.RequiredDuration:0.#}",
-                17, GameUi.Gold, TextAnchor.MiddleCenter);
-            if (showReward)
-                GameUi.Text(new Rect(panel.x + 12f, panel.y + 71f, 296f, 27f),
-                    data.RewardText,
-                    data.RewardText.Length > 20 ? 15 : 17, GameUi.Gold, TextAnchor.MiddleCenter);
+            bool previewReward = !rewardStarted && data.HasReward;
+            float panelHeight = showReward || previewReward ? 160f : 120f;
+            if (!completed && rewardStarted) panelHeight += 32f;
+            var panel = new Rect(GameUi.SafeArea.center.x - 220f,
+                GameUi.SafeArea.yMax - panelHeight - 140f, 440f, panelHeight);
+            GameUi.Sign(panel, GameUi.Gold);
+            GameUi.Text(new Rect(panel.x + 24f, panel.y + 18f, 392f, 34f),
+                rewardStarted ? data.CompletionMessage : data.DisplayName,
+                24, GameUi.Ink, TextAnchor.MiddleCenter);
+            GameUi.Text(new Rect(panel.x + 24f, panel.y + 58f, 392f, 30f),
+                rewardStarted ? $"+{data.QuilomboReward:0.#} de Quilombo" :
+                    $"Resistí {Progress:0.0}/{data.RequiredDuration:0.#} s · +{data.QuilomboReward:0.#} Q",
+                20, GameUi.Ink, TextAnchor.MiddleCenter);
+            if (showReward || previewReward)
+                GameUi.Text(new Rect(panel.x + 24f, panel.y + 94f, 392f, 30f),
+                    data.RewardText, 20, GameUi.Ink, TextAnchor.MiddleCenter);
             if (rewardStarted && !completed)
-                GameUi.Text(new Rect(panel.x + 12f, panel.y + 102f, 296f, 27f),
-                    $"{data.TimerLabel}: {Mathf.Max(0f, rewardEndTime - Time.time):0.0}s",
-                    17, GameUi.Gold, TextAnchor.MiddleCenter);
+                GameUi.Text(new Rect(panel.x + 24f, panel.y + 132f, 392f, 30f),
+                    $"{data.TimerLabel}: {Mathf.Max(0f, rewardEndTime - Time.time):0.0} s",
+                    20, GameUi.Ink, TextAnchor.MiddleCenter);
             if (!rewardStarted)
-                GameUi.Bar(new Rect(panel.x + 12f, panel.y + 76f, 296f, 10f),
+                GameUi.Bar(new Rect(panel.x + 24f, panel.yMax - 22f, 392f, 10f),
                     Progress / data.RequiredDuration, GameUi.Gold);
         }
-        GUI.matrix = previous;
+        GameUi.End(previous);
+    }
+
+    private bool HasNoticePriority()
+    {
+        zones ??= FindObjectsByType<RiskZone>(FindObjectsSortMode.None);
+        if (State == ZoneState.Active && !rewardStarted) return true;
+        foreach (RiskZone zone in zones)
+        {
+            if (zone == null || zone == this || !zone.isActiveAndEnabled) continue;
+            if (zone.State == ZoneState.Active && !zone.rewardStarted) return false;
+            if (Time.unscaledTime < zone.feedbackUntil && (zone.feedbackUntil > feedbackUntil ||
+                (zone.feedbackUntil == feedbackUntil && zone.GetInstanceID() > GetInstanceID()))) return false;
+        }
+        return true;
     }
 }

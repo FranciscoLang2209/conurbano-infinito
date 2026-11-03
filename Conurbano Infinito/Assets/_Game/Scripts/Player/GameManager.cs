@@ -5,17 +5,19 @@ using UnityEngine.SceneManagement;
 
 public sealed class GameManager : MonoBehaviour
 {
+    public const float DefaultDurationSeconds = 240f;
     public enum GameState { Playing, Paused, Defeat, Victory }
 
     [SerializeField] private Health playerHealth;
     [SerializeField] private WeaponController playerWeapon;
     [SerializeField] private SpawnManager spawnManager;
     [SerializeField] private WaveDirector waveDirector;
-    [SerializeField, Min(1f)] private float durationSeconds = 600f;
+    [SerializeField, Min(1f)] private float durationSeconds = DefaultDurationSeconds;
 
     public GameState State { get; private set; } = GameState.Playing;
     public event Action<GameState> StateChanged;
     public float ElapsedSeconds { get; private set; }
+    public float DurationSeconds => durationSeconds;
     public Health BossHealth => waveDirector != null ? waveDirector.ActiveBoss : null;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     public bool IsFastForwarding { get; private set; }
@@ -24,6 +26,7 @@ public sealed class GameManager : MonoBehaviour
 #endif
 
     private UpgradeSelection upgradeSelection;
+    private int focusedAction;
 
     private void Awake()
     {
@@ -80,6 +83,12 @@ public sealed class GameManager : MonoBehaviour
 
         if (State != GameState.Playing)
         {
+            focusedAction = GameUi.Navigate(focusedAction, State == GameState.Paused ? 3 : 2);
+            if (GameUi.Confirm)
+            {
+                ActivateAction(focusedAction);
+                return;
+            }
             if (keyboard != null && keyboard.mKey.wasPressedThisFrame)
             {
                 ReturnToMenu();
@@ -101,6 +110,7 @@ public sealed class GameManager : MonoBehaviour
         ElapsedSeconds = Mathf.Min(durationSeconds, ElapsedSeconds + Time.deltaTime * clockMultiplier);
         if (ElapsedSeconds >= durationSeconds)
         {
+            focusedAction = 0;
             State = GameState.Victory;
             StateChanged?.Invoke(State);
             StopGame();
@@ -117,6 +127,7 @@ public sealed class GameManager : MonoBehaviour
             return;
         }
 
+        focusedAction = 0;
         State = GameState.Paused;
         Time.timeScale = 0f;
     }
@@ -151,6 +162,7 @@ public sealed class GameManager : MonoBehaviour
             return;
         }
 
+        focusedAction = 0;
         State = GameState.Defeat;
         StateChanged?.Invoke(State);
         StopGame();
@@ -164,54 +176,59 @@ public sealed class GameManager : MonoBehaviour
         Time.timeScale = 0f;
     }
 
+    private void ActivateAction(int index)
+    {
+        if (State == GameState.Paused && index == 0) ContinueGame();
+        else if (index == (State == GameState.Paused ? 1 : 0)) RestartGame();
+        else ReturnToMenu();
+    }
+
     private void OnGUI()
     {
-        if (State == GameState.Playing)
-        {
-            return;
-        }
+        if (State == GameState.Playing) return;
         GUI.depth = 0;
         Matrix4x4 previous = GameUi.Begin();
         GameUi.Overlay();
-
-        float panelHeight = State == GameState.Paused ? 320f : 280f;
-        var panel = new Rect((GameUi.Width - 440) / 2f, (GameUi.Height - panelHeight) / 2f,
-            440, panelHeight);
-        Color accent = State == GameState.Victory ? GameUi.Gold :
-            State == GameState.Defeat ? GameUi.Red : GameUi.Cyan;
+        bool paused = State == GameState.Paused;
+        bool victory = State == GameState.Victory;
+        var panel = new Rect(GameUi.SafeArea.center.x - 450, GameUi.SafeArea.center.y - 226, 900, 452);
+        Color accent = victory ? GameUi.Gold : paused ? GameUi.Cyan : GameUi.Red;
         GameUi.Sign(panel, accent);
-        GameUi.Fill(new Rect(panel.x + 28, panel.y + 24, 384, 49), accent);
+        GameUi.Surface(new Rect(panel.x + 8, panel.y + 8, 368, 436), "enamel");
+        GameUi.Icon("plaza", new Rect(panel.x + 24, panel.y + 26, 336, 224));
+        GameUi.Icon("mate", new Rect(panel.x + 30, panel.y + 272, 32, 32));
+        GameUi.Text(new Rect(panel.x + 74, panel.y + 271, 276, 32),
+            paused ? "La plaza sigue ahí." : victory ? "El barrio te saluda." : "Mañana será otro día.",
+            21, GameUi.Cream);
+        int seconds = Mathf.FloorToInt(ElapsedSeconds);
+        GameUi.Text(new Rect(panel.x + 32, panel.y + 304, 304, 30), "Tiempo de supervivencia", 18, GameUi.Cream);
+        GameUi.Text(new Rect(panel.x + 30, panel.y + 334, 304, 68),
+            $"{seconds / 60:00}:{seconds % 60:00}", 52, GameUi.Cream);
+        GameUi.Text(new Rect(panel.x + 32, panel.y + 405, 304, 30), "Conurbano Infinito", 17, GameUi.Muted);
 
-        string title = State == GameState.Paused ? "PAUSA" :
-            State == GameState.Defeat ? "DERROTA" : "VICTORIA";
-        string detail = State == GameState.Paused ? "La plaza te espera · Esc para volver" :
-            State == GameState.Defeat ? "El Pibe cayó en la plaza" :
-            $"Resististe {Mathf.FloorToInt(ElapsedSeconds) / 60:00}:{Mathf.FloorToInt(ElapsedSeconds) % 60:00}";
-        GameUi.Text(new Rect(panel.x + 20, panel.y + 21, 400, 52), title, 34,
-            GameUi.Ink, TextAnchor.MiddleCenter);
-        GameUi.Fill(new Rect(panel.x + 90, panel.y + 82, 260, 4), GameUi.Petrol);
-        GameUi.Text(new Rect(panel.x + 25, panel.y + 96, 390, 35), detail, 18,
-            GameUi.Ink, TextAnchor.MiddleCenter);
-
-        if (State == GameState.Paused &&
-            GameUi.Button(new Rect(panel.x + 34, panel.y + 145, 372, 44), "CONTINUAR", "ESC"))
-            ContinueGame();
-
-        float restartY = State == GameState.Paused ? 200f : 157f;
-        if (GameUi.Button(new Rect(panel.x + 34, panel.y + restartY, 372, 44), "REINICIAR", "R"))
+        float x = panel.x + 412;
+        GameUi.Text(new Rect(x, panel.y + 28, 444, 25),
+            paused ? "Pausa · Bajá un cambio" : victory ? "Victoria · Cuatro minutos" : "Fin de partida",
+            18, GameUi.Petrol);
+        GameUi.Text(new Rect(x, panel.y + 63, 444, 108),
+            paused ? "Tomate un\nrespiro." : victory ? "La plaza\nes tuya." : "Hoy no\nse pudo.",
+            44, GameUi.Ink, TextAnchor.UpperLeft);
+        GameUi.Text(new Rect(x, panel.y + 171, 438, 24),
+            paused ? "Cuando quieras, seguimos." : victory ? "Aguantaste hasta el final. ¿Sale otra?" : "Sacudite el polvo. Todavía queda barrio.",
+            19, GameUi.Petrol);
+        int count = paused ? 3 : 2;
+        for (int i = 0; i < count; i++)
         {
-            GUI.matrix = previous;
-            RestartGame();
+            string label = paused && i == 0 ? "Seguir en la plaza" :
+                i == (paused ? 1 : 0) ? "Otra partida" : "Volver al menú";
+            string key = paused && i == 0 ? "ESC" : i == (paused ? 1 : 0) ? "R" : "M";
+            if (!GameUi.Button(new Rect(x, panel.y + 217 + i * 59, 438, 49), label, key,
+                focusedAction == i, i == 0)) continue;
+            GameUi.End(previous);
+            ActivateAction(i);
             GUIUtility.ExitGUI();
         }
-
-        float menuY = State == GameState.Paused ? 255f : 212f;
-        if (GameUi.Button(new Rect(panel.x + 34, panel.y + menuY, 372, 44), "MENÚ PRINCIPAL", "M"))
-        {
-            GUI.matrix = previous;
-            ReturnToMenu();
-            GUIUtility.ExitGUI();
-        }
-        GUI.matrix = previous;
+        GameUi.Text(new Rect(x, panel.y + 405, 438, 23), "Flechas / Tab + Enter · Mouse", 16, GameUi.Petrol);
+        GameUi.End(previous);
     }
 }

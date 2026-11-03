@@ -70,3 +70,23 @@ El Pibe, Mosquito, Paloma, las cuatro armas, Bolsa, Gema, Jefa, piso, bancos, á
 - El seguimiento suavizado de cámara y las escalas fraccionarias de prefabs pueden mover bordes fuera de la cuadrícula de píxeles. Evaluar el resultado en Game antes de considerar una Pixel Perfect Camera o cambiar movimiento.
 - El color multiplicado de prefabs y `WeaponData` puede ensuciar la paleta del arte final. Revisar cada integración; no neutralizar los tintes globalmente todavía.
 - El piso repetido sigue siendo una sola superficie visual, no un mapa con obstáculos. El HUD IMGUI ya usa marcos compactos; la tipografía de Unity y los iconos de mejoras sin sprite siguen pendientes de arte final.
+
+## Actualización de interfaz — 2026-10-16
+
+HUD y pantallas ahora usan recursos PNG propios, VT323 y una ilustración original de plaza, integrados a través de GameUi sin reemplazar IMGUI. Dirección, controles, importación, procedencia, capturas y validaciones en `Docs/UiRedesign/README.md`. Este cambio reemplaza los pendientes de tipografía e iconos de interfaz mencionados arriba.
+
+Segunda iteración: 17 iconos de UI originales a tamaño nativo, contorno tinta de 1 px, luz superior izquierda y paleta existente. Las seis armas tienen un dibujo del objeto separado del proyectil; el termo incluye tapa, cuello, cuerpo alto y manija abierta. Paneles, fuente y distribución se conservan. Comparativa y capturas reales en `Docs/UiRedesign/IconIteration/`.
+
+## Animaciones y Vecino Gomero — 2026-10-23
+
+El Pibe ahora usa seis poses de caminata; el perro distingue carrera, preparación, embestida y descanso. El nuevo Vecino Gomero lleva campera verde, pantalón azul y una gomera con banda roja; su preparación marca una trayectoria roja estrecha, distinta de la franja amarilla del perro. Todos usan el Canvas y la paleta propios, con impacto de chispas y muerte breve por compresión, inclinación y desvanecimiento. Recursos, parámetros y validación en `Docs/CombateYVecinoGomero.md`.
+
+## Muestra de plaza y selección — 2026-10-30
+
+Terreno con tres verdes cercanos (#54735A, #506E56, #58785E), detalle #648264 y camino #9B947F / juntas #898574, definidos junto a la paleta compartida en Tools/generate_visual_slice.py. Se eliminaron parches cuadrados y decoración con siluetas de enemigos/pickups; bancos, árboles y carteles se agrupan alrededor del cruce libre. Se conserva la textura repetida a 48 PPU efectivos. Ambos protagonistas reciben una sombra de apoyo en sus cuadros activos, sin cambios de clips ni mecánicas.
+
+HUD con XP explícita, niveles NV y borde de slots; selector con retratos de 176 px, estadísticas alineadas y selección/hover/foco diferenciados. Se conservan IMGUI, fuente, nueve secciones y referencias. Documentación, comparativas reales, evaluación de packs y límites en [Docs/ArtSample/README.md](ArtSample/README.md). Esta sección actualiza las observaciones antiguas sobre el piso ruidoso y la UI pendiente.
+
+## Corrección de lectura y desorden — 2026-10-30
+
+La dirección de interfaz vigente pasa a Atkinson Hyperlegible Regular/Bold, con texto crema sobre carbón o tinta sobre crema y superficies sin textura detrás de las letras. Azul gastado para bordes y botones; amarillo para selección, recompensa y acentos. La plaza recupera basura decorativa apagada y composición desigual sin tocar el bloque del pasto/caminos ni añadir colisiones. Esto sustituye la decisión previa de quitar bolsas y botellas del piso. Evidencia y archivos de la intervención en `Docs/VisualCorrection/README.md`.

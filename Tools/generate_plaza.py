@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import random
+import math
 
 from generate_visual_slice import Canvas
 
@@ -100,14 +101,39 @@ def paper(c, x, y):
     c.line(x - 2, y - 1, x + 3, y - 2, "pavement")
 
 
+def litter(c, draw, x, y, variant):
+    # Ground litter is smaller, muted and often lying down: no enemy eyes or pickup glow.
+    stamp = Canvas(64)
+    draw(stamp, 32, 32)
+    shades = {"ink": "pavement_dark", "cream": "concrete",
+              "grass_light": "turf_detail", "pavement": "concrete"}
+    from generate_visual_slice import rgba
+    shades = {rgba(source): rgba(target) for source, target in shades.items()}
+    for sy, row in enumerate(stamp.pixels):
+        for sx in range(64):
+            pixel = bytes(row[sx * 4:sx * 4 + 4])
+            if not pixel[3]: continue
+            dx, dy = sx - 32, sy - 32
+            if variant % 2: dx = -dx
+            if draw in (bottle, paper) and variant % 3: dx, dy = dy, -dx
+            factor = (.7, .85, 1)[variant % 3]
+            px, py = x + round(dx * factor), y + round(dy * factor)
+            assert 8 <= px < c.size - 8 and 8 <= py < c.size - 8, "Decoration must not cross repeat seam"
+            c.pixels[py][px * 4:px * 4 + 4] = shades.get(pixel, pixel)
+
+
 def sign(c, x, y):
     c.rect(x - 2, y - 4, x + 2, y + 22, "ink")
     c.rect(x - 1, y - 3, x + 1, y + 21, "pavement")
     c.poly([(x - 14, y - 11), (x + 12, y - 14),
             (x + 14, y + 1), (x - 12, y + 3)], "ink")
-    c.poly([(x - 11, y - 9), (x + 10, y - 11),
-            (x + 11, y - 1), (x - 10, y + 1)], "cream")
-    c.line(x - 8, y - 5, x + 7, y - 7, "red_dark")
+    c.rect(x - 11, y - 10, x + 11, y, "blue_dark")
+    letters = ("111101111100100", "100100100100111", "010101111101101", "111001010100111", "010101111101101")
+    for i, letter in enumerate(letters):
+        for row in range(5):
+            for col in range(3):
+                if letter[row*3+col] == "1": c.dot(x-9+i*4+col, y-7+row, "cream")
+
 
 
 def fountain(c, x, y):
@@ -165,50 +191,65 @@ def kiosco():
 def floor():
     RNG.seed(1909)
     c = Canvas(512)
-    for y in range(0, 512, 32):
-        for x in range(0, 512, 32):
-            grass(c, x, y, RNG.choices((0, 1, 2), (2, 8, 1))[0])
+    # Periodic contours keep the existing repeating material seamless at 48 world PPU.
+    for y in range(512):
+        for x in range(512):
+            wave = math.sin(x * math.tau / 512) + math.cos(y * math.tau / 512) + math.sin((x+y) * math.tau / 256) * .4
+            color = "turf_shade" if wave < -.8 else "turf_light" if wave > 1 else "turf"
+            distance = min(abs(x-256) - (43 + round(3*math.sin(y*math.tau/128))),
+                           abs(y-256) - (39 + round(3*math.sin(x*math.tau/256))))
+            if distance < 0:
+                color = "path_joint" if (x % 32 == 0 or y % 32 == 0) else "path"
+            elif distance < 4 and (x+y) % 5 != 0:
+                color = "path_joint" if distance < 2 else "turf_shade"
+            c.dot(x, y, color)
+    for _ in range(180):
+        x, y = RNG.randrange(8, 504), RNG.randrange(8, 504)
+        if abs(x-256) > 58 and abs(y-256) > 54:
+            c.line(x, y, x+2, y, "turf_detail")
+            if RNG.randrange(3) == 0: c.dot(x+1, y-1, "turf_detail")
 
-    # Paving crosses both tile boundaries: the existing plane can still repeat forever.
-    for x in range(0, 512, 32):
-        for y in (224, 256):
-            paving(c, x, y)
-    for y in range(0, 512, 32):
-        for x in (224, 256):
-            paving(c, x, y)
-
-    for x, y in ((42, 46), (170, 48), (388, 50), (468, 150),
-                 (64, 365), (178, 441), (412, 428), (474, 356)):
+    terrain = [bytes(row) for row in c.pixels]
+    # Unequal distances and unpaired furniture: a busy fountain, a quiet lawn and service corners.
+    for x, y in ((45, 54), (176, 48), (58, 178), (401, 61), (468, 169),
+                 (52, 367), (183, 466), (414, 420), (471, 467)):
         tree(c, x, y)
-    for x, y in ((135, 153), (374, 164), (137, 354), (373, 367)):
+    fountain(c, 122, 111)
+    for x, y in ((91, 166), (376, 154), (158, 355), (391, 387), (65, 455)):
         bench(c, x, y)
-    fountain(c, 124, 94)
-    for x, y in ((72, 214), (362, 296), (180, 280), (411, 398), (329, 102)):
-        dirt(c, x, y)
-    for x, y in ((306, 193), (200, 329), (461, 303)):
+    for x, y in ((159, 184), (452, 122), (79, 330), (448, 395)):
         bin_(c, x, y)
-    for x, y in ((164, 196), (333, 378), (94, 300)):
+    for x, y in ((347, 78), (115, 420)):
         sign(c, x, y)
-
-    # The risk areas sit at x=-3 and x=+3 world units (tile x=112 and 400).
-    # Clutter, rather than a colored patch, identifies the busier parrilla sector.
-    for x, y in ((353, 211), (444, 206), (348, 314), (455, 308), (479, 250)):
-        bag(c, x, y)
-    for x, y in ((365, 227), (462, 230), (341, 279), (438, 319)):
-        crate(c, x, y)
-    for x, y in ((334, 241), (469, 274), (388, 333), (459, 182)):
-        cone(c, x, y)
-    for x, y in ((353, 262), (426, 198), (474, 321), (395, 307),
-                 (73, 274), (148, 300), (178, 236)):
-        bottle(c, x, y)
-    for x, y in ((371, 194), (473, 215), (331, 287), (450, 337),
-                 (74, 308), (168, 213), (126, 326), (191, 261)):
-        paper(c, x, y)
-    for x, y in ((307, 277), (475, 276), (365, 344), (78, 326)):
-        dirt(c, x, y)
-    for x, y in ((58, 180), (204, 100), (307, 454), (487, 418),
-                 (102, 411), (443, 94), (197, 381)):
-        paper(c, x, y)
+    # Dense pockets gather near bins/benches, with isolated scraps on the quieter lawns.
+    objects = (
+        (bag, 172, 195), (bag, 149, 200), (paper, 183, 182), (bottle, 139, 185),
+        (paper, 166, 167), (paper, 68, 183), (bottle, 117, 174),
+        (paper, 94, 133), (bottle, 153, 132), (paper, 83, 102),
+        (crate, 472, 104), (crate, 489, 123), (bag, 458, 145),
+        (paper, 434, 140), (paper, 480, 160), (bottle, 418, 160),
+        (cone, 325, 184), (cone, 345, 196), (paper, 389, 185),
+        (bottle, 373, 170), (paper, 338, 120), (paper, 485, 63),
+        (bag, 65, 345), (bag, 85, 351), (paper, 98, 333),
+        (bottle, 66, 320), (paper, 46, 342), (crate, 32, 454),
+        (bottle, 81, 470), (paper, 110, 454), (paper, 168, 373),
+        (paper, 193, 407), (bottle, 142, 393),
+        (bag, 461, 412), (crate, 479, 390), (cone, 484, 354),
+        (paper, 433, 411), (bottle, 414, 394), (paper, 456, 374),
+        (paper, 358, 431), (bottle, 333, 341), (paper, 373, 366),
+    )
+    for variant, (draw, x, y) in enumerate(objects):
+        litter(c, draw, x, y, variant)
+    # The full-width walking/combat cross retains the exact current terrain pixels.
+    for y, row in enumerate(c.pixels):
+        for x in range(512):
+            if abs(x - 256) < 44 or abs(y - 256) < 40:
+                assert row[x*4:x*4+4] == terrain[y][x*4:x*4+4], "Keep circulation clear"
+    c.pixels[-1][:] = c.pixels[0]
+    for row in c.pixels: row[-4:] = row[:4]
+    assert all(row[3::4].count(255) == 512 for row in c.pixels)
+    assert c.pixels[0] == c.pixels[-1], "Vertical repeat seam"
+    assert all(row[:4] == row[-4:] for row in c.pixels), "Horizontal repeat seam"
     c.save(OUT / "PlazaPiso.png")
 
 

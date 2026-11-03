@@ -1,0 +1,20 @@
+2026-10-16 · Unity 6000.3.23f1 · macOS Metal · isolated copy
+Baseline: 797de66 + existing local UI changes; exit code 0
+Final run: UiRedesignCheck.RunBatch; exit code 0
+
+conurbano-icons-before.log
+UI_ASSETS_PASS 20 textures, point, no mipmaps/compression, nine-slice, Spanish accents.
+UI_RUNTIME_PASS indicators, weapon N1/N2, four slots, F3, upgrades, Esc, arrow/Enter, R, M, menu, credits, victory.
+UI_REDESIGN_PASS assets=20 font=Spanish HUD=health,xp,level,quilombo,weapons pause=keyboard,mouse-ready restart=clean menu=True defeat=True victory=True screenshots=4-resolutions
+
+conurbano-icons-final.log
+UI_ASSETS_PASS 26 textures, 17 native-size icons, 6 object icons, point, no mipmaps/compression, nine-slice, Spanish accents.
+UI_RUNTIME_PASS indicators, weapon N1/N2, four slots, F3, upgrades, Esc, arrow/Enter, R, M, menu, credits, victory.
+UI_REDESIGN_PASS assets=26 icons=native-size weapons=6 font=Spanish HUD=health,xp,level,quilombo,weapons pause=keyboard,mouse-ready restart=clean menu=True defeat=True victory=True screenshots=4-resolutions
+
+PNG_SOURCE_PASS 17 RGBA icons; native dimensions; palette; binary alpha; transparent border; meta files present.
+PRESERVATION_PASS 8 surfaces + plaza byte-identical to baseline.
+CAPTURE_PASS 15 fresh final screenshots; dimensions match filenames.
+SOURCE_PASS runtime and editor check match tested isolated copy.
+VISUAL_REVIEW_PASS HUD 1024x768, 1280x720, 1920x1080, 2560x1080; alternate equipment 1024x768 and 1280x720; cards; no clipping or aspect distortion.
+NOT_RUN distribution player builds; Windows hardware; prolonged human playtest.

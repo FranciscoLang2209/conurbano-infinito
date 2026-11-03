@@ -29,7 +29,7 @@ public static class Hito4Check
             game.FindProperty("playerWeapon").objectReferenceValue != player.GetComponent<WeaponController>() ||
             game.FindProperty("spawnManager").objectReferenceValue != spawnManager ||
             game.FindProperty("waveDirector").objectReferenceValue != Object.FindFirstObjectByType<WaveDirector>() ||
-            game.FindProperty("durationSeconds").floatValue != 600f ||
+            game.FindProperty("durationSeconds").floatValue != 240f ||
             spawn.FindProperty("player").objectReferenceValue != player.transform ||
             spawn.FindProperty("spawnCamera").objectReferenceValue != Camera.main ||
             spawn.FindProperty("minimumPlayerDistance").floatValue < 0f ||
@@ -38,7 +38,7 @@ public static class Hito4Check
             throw new System.Exception("Faltan referencias o la duración del hito 4 es incorrecta.");
         }
 
-        Debug.Log("Slice: escena y referencias correctas. Probá 600 s en Play Mode.");
+        Debug.Log("Slice: escena y referencias correctas. Probá 240 s en Play Mode.");
     }
 
     [MenuItem("Tools/Conurbano Infinito/Comprobar pausa del slice")]
