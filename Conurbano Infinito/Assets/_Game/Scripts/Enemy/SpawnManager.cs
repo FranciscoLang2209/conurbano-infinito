@@ -18,8 +18,13 @@ public sealed class SpawnManager : MonoBehaviour
         }
     }
 
-    public Health Spawn(GameObject enemyPrefab)
+    public Health Spawn(GameObject enemyPrefab) => Spawn(enemyPrefab, 1f, 1f);
+
+    public Health Spawn(GameObject enemyPrefab, float healthFactor, float speedFactor)
     {
+        if (!(healthFactor >= 1f) || float.IsInfinity(healthFactor) ||
+            !(speedFactor >= 1f) || float.IsInfinity(speedFactor))
+            throw new System.ArgumentOutOfRangeException(nameof(healthFactor), "Factores de aparición inválidos.");
         if (!enabled || enemyPrefab == null)
         {
             return null;
@@ -42,12 +47,16 @@ public sealed class SpawnManager : MonoBehaviour
 
         GameObject enemy = pool.Spawn(enemyPrefab, playerPosition + direction * distance,
             Quaternion.identity);
-        if (enemy.TryGetComponent(out MosquitoChase mosquito)) mosquito.SetTarget(player);
-        if (enemy.TryGetComponent(out EnemyMovement movement)) movement.SetTarget(player);
-        if (enemy.TryGetComponent(out EnemyCharge charge)) charge.SetTarget(player);
-        if (enemy.TryGetComponent(out EnemyRanged ranged)) ranged.SetTarget(player);
+        if (enemy == null) return null;
+        Health health = enemy.GetComponent<Health>();
+        // Spawn is synchronous: configure from prefab values before assigning targets or the next physics step.
+        health.ConfigureSpawnHealth(healthFactor);
+        if (enemy.TryGetComponent(out MosquitoChase mosquito)) { mosquito.SpawnSpeedFactor = speedFactor; mosquito.SetTarget(player); }
+        if (enemy.TryGetComponent(out EnemyMovement movement)) { movement.SpawnSpeedFactor = speedFactor; movement.SetTarget(player); }
+        if (enemy.TryGetComponent(out EnemyCharge charge)) { charge.SpawnSpeedFactor = speedFactor; charge.SetTarget(player); }
+        if (enemy.TryGetComponent(out EnemyRanged ranged)) { ranged.SpawnSpeedFactor = speedFactor; ranged.SetTarget(player); }
         if (enemy.TryGetComponent(out EnemyVisual visual)) visual.SetTarget(player);
         if (enemy.TryGetComponent(out BossAttack attack)) attack.SetTarget(player);
-        return enemy.GetComponent<Health>();
+        return health;
     }
 }

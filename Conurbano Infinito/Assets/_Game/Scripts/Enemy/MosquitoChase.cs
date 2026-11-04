@@ -6,6 +6,8 @@ public sealed class MosquitoChase : MonoBehaviour
     [SerializeField] private Transform target;
     [SerializeField, Min(0f)] private float movementSpeed = 2f;
 
+    internal float SpawnSpeedFactor { get; set; } = 1f;
+
     private Rigidbody2D body;
     private Health targetHealth;
     private static Sprite placeholderSprite;
@@ -34,6 +36,8 @@ public sealed class MosquitoChase : MonoBehaviour
         targetHealth = target != null ? target.GetComponent<Health>() : null;
     }
 
+    private void OnDisable() => SpawnSpeedFactor = 1f;
+
     private void FixedUpdate()
     {
         if (target == null || (targetHealth != null && targetHealth.IsDead))
@@ -49,6 +53,6 @@ public sealed class MosquitoChase : MonoBehaviour
         }
 
         Vector2 direction = offset.normalized;
-        body.MovePosition(body.position + direction * Mathf.Min(distance, movementSpeed * Time.fixedDeltaTime));
+        body.MovePosition(body.position + direction * Mathf.Min(distance, movementSpeed * SpawnSpeedFactor * Time.fixedDeltaTime));
     }
 }

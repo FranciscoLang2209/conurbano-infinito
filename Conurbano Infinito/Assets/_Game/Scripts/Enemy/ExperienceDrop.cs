@@ -30,10 +30,12 @@ public sealed class ExperienceDrop : MonoBehaviour
 
     private void DropGem()
     {
-        ExperienceGem gem = TryGetComponent(out PooledObject pooled) && pooled.Owner != null
-            ? pooled.Owner.Spawn(gemPrefab.gameObject, transform.position,
-                Quaternion.identity).GetComponent<ExperienceGem>()
-            : Instantiate(gemPrefab, transform.position, Quaternion.identity);
+        if (TryGetComponent(out PooledObject pooled) && pooled.Owner != null)
+        {
+            pooled.Owner.DropExperience(gemPrefab, transform.position, Mathf.Max(1, experienceValue));
+            return;
+        }
+        ExperienceGem gem = Instantiate(gemPrefab, transform.position, Quaternion.identity);
         gem.Initialize(Mathf.Max(1, experienceValue));
     }
 }

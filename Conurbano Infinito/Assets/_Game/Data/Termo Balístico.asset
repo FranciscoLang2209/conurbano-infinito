@@ -24,3 +24,4 @@ MonoBehaviour:
   projectileSprite: {fileID: -743238501231017332, guid: 2925f5ffbec5241b9a6cebc588e25f48, type: 3}
   projectileColor: {r: 1, g: 1, b: 1, a: 1}
   projectileScale: {x: 0.2, y: 0.4}
+  directProjectile: 1

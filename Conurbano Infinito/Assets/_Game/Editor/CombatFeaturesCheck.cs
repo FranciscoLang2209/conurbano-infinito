@@ -114,10 +114,16 @@ public static class CombatFeaturesCheck
             await Task.Delay(120);
             Require(frame != renderer.sprite && player.transform.position.x < start.x, "Walking does not animate or move.");
             Time.timeScale = 0;
+            // Animator still evaluates this frame's delta after an async continuation pauses it.
+            int pauseFrame = Time.frameCount;
+            await Until(() => Time.frameCount > pauseFrame, 5);
             frame = renderer.sprite;
+            float pausedAnimationTime = animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
             Vector3 paused = player.transform.position;
             await Task.Delay(180);
-            Require(frame == renderer.sprite && player.transform.position == paused, "Pause advances player animation.");
+            Require(frame == renderer.sprite && player.transform.position == paused &&
+                Mathf.Approximately(animator.GetCurrentAnimatorStateInfo(0).normalizedTime, pausedAnimationTime),
+                "Pause advances player animation.");
             Time.timeScale = 1;
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.D));
             InputSystem.Update();
@@ -162,7 +168,7 @@ public static class CombatFeaturesCheck
                     "Lethal hit froze the impact animation: " + name);
                 var dropped = Object.FindObjectsByType<ExperienceGem>(FindObjectsSortMode.None).Except(gemsBefore).ToArray();
                 Require(dropped.Length == 1 &&
-                    (int)typeof(ExperienceGem).GetField("experienceValue", Flags).GetValue(dropped[0]) == xp,
+                    dropped[0].Value == xp,
                     "XP missing, changed or duplicated: " + name);
                 ObjectPool.Release(dropped[0].gameObject);
                 ObjectPool.Release(enemy.gameObject);
@@ -320,9 +326,14 @@ public static class CombatFeaturesCheck
         Invoke(ranged, "FixedUpdate");
         await Task.Delay(80);
         Time.timeScale = 0;
+        int pauseFrame = Time.frameCount;
+        await Until(() => Time.frameCount > pauseFrame, 5);
         Sprite dogFrame = dog.GetComponent<SpriteRenderer>().sprite;
+        float pausedAnimationTime = animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
         await Capture("avisos-perro-gomero");
-        Require(dog.GetComponent<SpriteRenderer>().sprite == dogFrame, "Dog animates during pause.");
+        Require(dog.GetComponent<SpriteRenderer>().sprite == dogFrame &&
+            Mathf.Approximately(animator.GetCurrentAnimatorStateInfo(0).normalizedTime, pausedAnimationTime),
+            "Dog animates during pause.");
         Time.timeScale = 1;
         Set(charge, "phaseEndTime", Time.time - 1);
         Invoke(charge, "FixedUpdate");

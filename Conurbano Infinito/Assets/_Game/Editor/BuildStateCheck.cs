@@ -30,7 +30,7 @@ public static class BuildStateCheck
                 .Select(g => AssetDatabase.LoadAssetAtPath<ScriptableObject>(AssetDatabase.GUIDToAssetPath(g))).ToArray();
             var snapshots = definitions.ToDictionary(d => AssetDatabase.GetAssetPath(d), d => EditorJsonUtility.ToJson(d));
             var ids = definitions.Select(d => (string)d.GetType().GetProperty("StableId").GetValue(d)).ToArray();
-            Require(definitions.Length == 44 && ids.All(id => !string.IsNullOrWhiteSpace(id)) &&
+            Require(definitions.Length == 46 && ids.All(id => !string.IsNullOrWhiteSpace(id)) &&
                 ids.Distinct().Count() == ids.Length, "Missing or duplicate stable IDs.");
             foreach (var definition in definitions)
             {
@@ -69,7 +69,7 @@ public static class BuildStateCheck
             Require(errors == 0, "Gameplay Console errors: " + errors);
             EditorApplication.ExitPlaymode();
             await Until(() => !EditorApplication.isPlaying);
-            Debug.Log("BUILD_STATE_CHECK_PASS ids=44 weapons=7 level=1-8 card-caps=True formulas=True order=True future-weapons=True clamps=True snapshots=True orbitals=True queue=True double-input=True revalidation=True reset=2-characters immutable-definitions=True knownEditorSearchErrors=" + searchErrors);
+            Debug.Log("BUILD_STATE_CHECK_PASS ids=46 weapons=7 level=1-8 card-caps=True formulas=True order=True future-weapons=True clamps=True snapshots=True orbitals=True queue=True double-input=True revalidation=True reset=2-characters immutable-definitions=True knownEditorSearchErrors=" + searchErrors);
             EditorApplication.Exit(0);
         }
         catch (Exception error) { Debug.LogException(error); EditorApplication.Exit(1); }
@@ -85,7 +85,7 @@ public static class BuildStateCheck
             await SelectCard(deck.Single(c => c.TargetWeapon == data && c.Effect == UpgradeEffect.EquipWeapon));
         Require(controller.GetWeaponLevel(data) == 1, "Acquisition must start at 1.");
         var state = State(controller, data);
-        Require(Stat(controller, "GetDamage", state) == data.Damage && Stat(controller, "GetInterval", state) == data.FireInterval &&
+        Require(Mathf.Approximately(Stat(controller, "GetDamage", state), data.Damage * (1f + (data.DirectProjectile ? CharacterData.All[0].DirectProjectileDamageBonus : 0f))) && Stat(controller, "GetInterval", state) == data.FireInterval &&
             Stat(controller, "GetSpeed", state) == data.ProjectileSpeed, "Base statistics changed: " + data.name);
         var cards = deck.Where(c => c.TargetWeapon == data && c.Effect != UpgradeEffect.EquipWeapon).ToArray();
         Require(cards.Sum(c => c.MaximumLevel) >= 7, "Cannot reach level 8: " + data.name);
@@ -116,7 +116,8 @@ public static class BuildStateCheck
     {
         var termo = LoadWeapon("Termo Balístico");
         var fernet = LoadWeapon("Fernets Orbitales");
-        float expected = (termo.Damage + 2 + 3) * 1.2f;
+        // Stage 3: the Pibe affinity adds 10% to the same percentage sum as Parrilla.
+        float expected = (termo.Damage + 2 + 3) * 1.3f;
         foreach (bool percentageFirst in new[] { true, false })
         {
             await FreshMain(CharacterData.All[0]);
@@ -199,7 +200,7 @@ public static class BuildStateCheck
         Invoke(fractionalController, "Fire", State(fractionalController, termo), fractionalHealth);
         var fractionalShot = Object.FindObjectsByType<Projectile>(FindObjectsSortMode.None).Except(projectilesBefore).Single();
         Invoke(fractionalShot, "OnTriggerEnter2D", fractionalTarget.GetComponent<Collider2D>());
-        Require(Mathf.Approximately((float)Field(fractionalHealth, "remainingHealth"), 8.8f) && fractionalController.Damage == 1,
+        Require(Mathf.Approximately((float)Field(fractionalHealth, "remainingHealth"), 8.7f) && fractionalController.Damage == 1,
             "Fractional damage rounded before Health.");
         Object.DestroyImmediate(fractionalTarget);
     }

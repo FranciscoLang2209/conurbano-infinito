@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b2a476d7ce74fcc8cd160a9bcbdcaa2, type: 3}
+  m_Name: Clasico
+  m_EditorClassIdentifier: Assembly-CSharp::RunRules
+  stableId: mode.classic-v1
+  mode: 0
+  openingSeconds: 240
+  segmentSeconds: 120
+  healthPerSegment: 0.2
+  speedPerSegment: 0.02
+  maximumSpeedFactor: 1.3
+  pressurePerSegment: 0.08
+  maximumFrequencyFactor: 2
+  minimumSpawnInterval: 0.2
+  maximumCommonEnemies: 150
+  bossRepeatSeconds: 240
+  maximumGems: 256
+  maximumProjectiles: 256

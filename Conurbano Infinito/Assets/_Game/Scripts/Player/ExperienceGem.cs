@@ -6,7 +6,8 @@ public sealed class ExperienceGem : MonoBehaviour
 {
     public static event Action Collected;
     private static Sprite placeholderSprite;
-    private int experienceValue;
+    private long experienceValue;
+    public long Value => experienceValue;
     private bool collected;
 
     private void Awake()
@@ -28,6 +29,8 @@ public sealed class ExperienceGem : MonoBehaviour
     {
         experienceValue = value;
     }
+
+    internal void AddValue(int value) => experienceValue = checked(experienceValue + value);
 
     private void OnDisable()
     {

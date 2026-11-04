@@ -11,6 +11,7 @@ public sealed class GameHud : MonoBehaviour
     private UpgradeSelection upgrades;
     private WaveDirector waves;
     private int lastPhase;
+    private int lastSegment;
     private RiskZone[] pointsOfInterest;
     private Rect[] poiPanels;
     private float displayedQuilombo;
@@ -24,6 +25,7 @@ public sealed class GameHud : MonoBehaviour
     private string feedbackMessage;
     private string queuedFeedback;
     private float feedbackUntil;
+    private readonly System.Collections.Generic.Queue<SynergyData> synergyNotices = new();
 
     private void Awake()
     {
@@ -47,6 +49,7 @@ public sealed class GameHud : MonoBehaviour
 
     private void OnEnable()
     {
+        if (weapons != null) weapons.SynergyActivated += OnSynergyActivated;
         if (quilombo == null) return;
         quilombo.OnQuilomboChanged += UpdateQuilombo;
         UpdateQuilombo(quilombo.Current);
@@ -54,8 +57,12 @@ public sealed class GameHud : MonoBehaviour
 
     private void OnDisable()
     {
+        if (weapons != null) weapons.SynergyActivated -= OnSynergyActivated;
+        synergyNotices.Clear();
         if (quilombo != null) quilombo.OnQuilomboChanged -= UpdateQuilombo;
     }
+
+    private void OnSynergyActivated(SynergyData data) => synergyNotices.Enqueue(data);
 
     private void UpdateQuilombo(float value)
     {
@@ -77,10 +84,18 @@ public sealed class GameHud : MonoBehaviour
 
     private void Update()
     {
+        if (synergyNotices.Count > 0 && gameManager.State == GameManager.GameState.Playing &&
+            Time.timeScale > 0f && Time.unscaledTime >= feedbackUntil && queuedFeedback == null)
+            ShowQuilomboFeedback("Sinergia activa · " + synergyNotices.Dequeue().DisplayName);
         if (waves != null && waves.PhaseNumber != lastPhase)
         {
             lastPhase = waves.PhaseNumber;
             ShowQuilomboFeedback($"Oleada {lastPhase}/{waves.PhaseCount} · {waves.PhaseTitle}");
+        }
+        if (waves != null && waves.EndlessSegment != lastSegment)
+        {
+            lastSegment = waves.EndlessSegment;
+            ShowQuilomboFeedback($"Infinito · Tramo {lastSegment} · Más presión");
         }
         if (playerHealth.CurrentHealth < lastHealth) damageFlashUntil = Time.unscaledTime + 0.22f;
         if (experience.Level > lastLevel) levelPulseUntil = Time.unscaledTime + 0.35f;
@@ -124,15 +139,27 @@ public sealed class GameHud : MonoBehaviour
         int seconds = Mathf.FloorToInt(gameManager.ElapsedSeconds);
         int duration = Mathf.CeilToInt(gameManager.DurationSeconds);
         var timer = new Rect(safe.center.x - 112, top, 224, 104);
+        string timerTitle = "Tiempo en la plaza";
+        if (!gameManager.HasTimeLimit)
+        {
+            float next = waves.EndlessSegment == 0 ? gameManager.Configuration.OpeningSeconds :
+                gameManager.Configuration.OpeningSeconds + waves.EndlessSegment * gameManager.Configuration.SegmentSeconds;
+            bool bossNext = waves.NextBossSeconds > gameManager.ElapsedSeconds && waves.NextBossSeconds <= next;
+            int remaining = Mathf.Max(0, Mathf.CeilToInt((bossNext ? waves.NextBossSeconds : next) - gameManager.ElapsedSeconds));
+            timerTitle = gameManager.BossHealth != null && !gameManager.BossHealth.IsDead ? "Jefa en la plaza" :
+                $"{(bossNext ? "Jefa" : "Tramo")} en {remaining / 60:00}:{remaining % 60:00}";
+        }
         GameUi.Surface(timer, "paper");
-        GameUi.Text(new Rect(timer.x + 12, timer.y + 6, 200, 26), "Tiempo en la plaza", 18,
+        GameUi.Text(new Rect(timer.x + 12, timer.y + 6, 200, 26), timerTitle, 18,
             GameUi.Ink, TextAnchor.MiddleCenter);
         GameUi.Icon("clock", new Rect(timer.x + 16, timer.y + 36, 32, 32));
         GameUi.Text(new Rect(timer.x + 52, timer.y + 25, 160, 56),
             $"{seconds / 60:00}:{seconds % 60:00}", 44,
-            seconds >= duration - 30 ? GameUi.Red : GameUi.Ink, TextAnchor.MiddleCenter);
+            gameManager.HasTimeLimit && seconds >= duration - 30 ? GameUi.Red : GameUi.Ink, TextAnchor.MiddleCenter);
         GameUi.Text(new Rect(timer.x + 12, timer.y + 75, 200, 26),
-            $"Meta {duration / 60:00}:{duration % 60:00}", 18, GameUi.Ink, TextAnchor.MiddleCenter);
+            gameManager.HasTimeLimit ? $"Meta {duration / 60:00}:{duration % 60:00}" :
+            waves.EndlessSegment == 0 ? "Infinito · Apertura" : $"Infinito · Tramo {waves.EndlessSegment}",
+            18, GameUi.Ink, TextAnchor.MiddleCenter);
 
         Color danger = displayedQuilombo >= 25 ? GameUi.Red : displayedQuilombo >= 10 ? GameUi.Orange : GameUi.Gold;
         float qx = right - 284;
@@ -167,13 +194,15 @@ public sealed class GameHud : MonoBehaviour
             if (i < count)
             {
                 WeaponData item = weapons.GetEquippedWeapon(i);
+                bool evolved = weapons.GetEvolution(item) != null;
+                if (evolved) GameUi.Outline(slot, GameUi.Gold, 2);
                 GameUi.Icon(GameUi.WeaponIcon(item), new Rect(slot.x + 11, slot.y + 3, 40, 40));
                 GameUi.Text(new Rect(slot.x, slot.y + 40, 62, 28),
-                    "N " + weapons.GetWeaponLevel(item), 20, GameUi.Cream, TextAnchor.MiddleCenter);
+                    (evolved ? "E " : "N ") + weapons.GetWeaponLevel(item), 20, GameUi.Cream, TextAnchor.MiddleCenter);
                 if (slot.Contains(Event.current.mousePosition))
                 {
-                    GameUi.Panel(new Rect(left, equipmentY - 62, 300, 32), GameUi.Gold);
-                    GameUi.Text(new Rect(left + 12, equipmentY - 60, 276, 28), item.name, 18, GameUi.Cream);
+                    GameUi.Panel(new Rect(left, equipmentY - 62, 380, 32), GameUi.Gold);
+                    GameUi.Text(new Rect(left + 12, equipmentY - 60, 356, 28), weapons.GetWeaponDisplayName(item), 18, GameUi.Cream);
                 }
             }
             else GameUi.Text(slot, "—", 26, GameUi.Concrete, TextAnchor.MiddleCenter);
@@ -205,16 +234,22 @@ public sealed class GameHud : MonoBehaviour
         Health boss = gameManager.BossHealth;
         if (boss != null && !boss.IsDead)
         {
-            var bossPanel = new Rect(safe.center.x - 210, height - 118, 420, 43);
+            var bossPanel = new Rect(safe.center.x - 210, height - 122, 420, 47);
             GameUi.Panel(bossPanel, GameUi.Red);
-            GameUi.Text(new Rect(bossPanel.x + 12, bossPanel.y + 3, 396, 22),
+            GameUi.Text(new Rect(bossPanel.x + 12, bossPanel.y + 3, 396, 26),
                 $"La Jefa  {boss.CurrentHealth}/{boss.MaximumHealth}", 18, GameUi.Cream, TextAnchor.MiddleCenter);
-            GameUi.Bar(new Rect(bossPanel.x + 12, bossPanel.y + 28, 396, 7),
+            GameUi.Bar(new Rect(bossPanel.x + 12, bossPanel.y + 32, 396, 7),
                 (float)boss.CurrentHealth / boss.MaximumHealth, GameUi.Red);
         }
         GameUi.Surface(new Rect(right - 262, height - 50, 262, 34), "enamel");
         GameUi.Text(new Rect(right - 250, height - 48, 238, 30), "Esc · Tomate un respiro", 18,
             GameUi.Cream, TextAnchor.MiddleRight);
+        if (weapons.FestejoReady)
+        {
+            GameUi.Panel(new Rect(right - 284, height - 92, 284, 34), GameUi.Gold);
+            GameUi.Text(new Rect(right - 272, height - 90, 260, 30),
+                "Festejo listo · Petardo +25%", 16, GameUi.Cream, TextAnchor.MiddleCenter);
+        }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (gameManager.IsFastForwarding)
             GameUi.Text(new Rect(right - 240, height - 68, 240, 22), "DEV x10  ·  F9 NORMAL", 14, GameUi.Gold);

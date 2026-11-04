@@ -136,6 +136,7 @@ public sealed class RiskZone : MonoBehaviour
             bool showReward = rewardStarted && data.HasReward;
             bool previewReward = !rewardStarted && data.HasReward;
             float panelHeight = showReward || previewReward ? 160f : 120f;
+            if (!rewardStarted) panelHeight += 28f;
             if (!completed && rewardStarted) panelHeight += 32f;
             var panel = new Rect(GameUi.SafeArea.center.x - 220f,
                 GameUi.SafeArea.yMax - panelHeight - 140f, 440f, panelHeight);
@@ -154,6 +155,9 @@ public sealed class RiskZone : MonoBehaviour
                 GameUi.Text(new Rect(panel.x + 24f, panel.y + 132f, 392f, 30f),
                     $"{data.TimerLabel}: {Mathf.Max(0f, rewardEndTime - Time.time):0.0} s",
                     20, GameUi.Ink, TextAnchor.MiddleCenter);
+            if (!rewardStarted)
+                GameUi.Text(new Rect(panel.x + 24f, panel.y + (previewReward ? 128f : 94f), 392f, 28f),
+                    "El Quilombo aumenta la presión enemiga.", 18, GameUi.Petrol, TextAnchor.MiddleCenter);
             if (!rewardStarted)
                 GameUi.Bar(new Rect(panel.x + 24f, panel.yMax - 22f, 392f, 10f),
                     Progress / data.RequiredDuration, GameUi.Gold);

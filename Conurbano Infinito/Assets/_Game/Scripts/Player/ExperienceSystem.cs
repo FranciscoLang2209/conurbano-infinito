@@ -51,14 +51,16 @@ public sealed class ExperienceSystem : MonoBehaviour
         collectionBonusUntil = Time.time + duration;
     }
 
-    public void AddExperience(int amount)
+    public void AddExperience(int amount) => AddExperience((long)amount);
+
+    public void AddExperience(long amount)
     {
         if (amount <= 0)
         {
             return;
         }
 
-        long total = (long)CurrentExperience + amount;
+        long total = checked((long)CurrentExperience + amount);
         while (total >= RequiredExperience && Level < int.MaxValue)
         {
             total -= RequiredExperience;

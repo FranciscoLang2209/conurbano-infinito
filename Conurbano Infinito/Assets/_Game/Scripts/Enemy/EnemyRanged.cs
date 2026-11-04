@@ -11,6 +11,8 @@ public sealed class EnemyRanged : MonoBehaviour
     [SerializeField, Min(0.1f)] private float warningSeconds = 0.9f;
     [SerializeField, Min(0.1f)] private float cooldownSeconds = 3.5f;
 
+    internal float SpawnSpeedFactor { get; set; } = 1f;
+
     private Rigidbody2D body;
     private Health health;
     private Health target;
@@ -85,7 +87,7 @@ public sealed class EnemyRanged : MonoBehaviour
             GameObject stone = pool != null
                 ? pool.Spawn(stonePrefab.gameObject, origin, Quaternion.identity)
                 : Instantiate(stonePrefab.gameObject, origin, Quaternion.identity);
-            stone.GetComponent<EnemyStone>().Initialize(health, target, aimDirection);
+            if (stone != null) stone.GetComponent<EnemyStone>().Initialize(health, target, aimDirection);
             CancelWarning();
             nextAttackTime = Time.time + cooldownSeconds;
             if (animator != null) animator.SetInteger("RangedPhase", 2);
@@ -97,7 +99,7 @@ public sealed class EnemyRanged : MonoBehaviour
         if (offset.sqrMagnitude > attackDistance * attackDistance)
         {
             if (animator != null) animator.SetInteger("RangedPhase", 0);
-            body.MovePosition(body.position + offset.normalized * movementSpeed * Time.fixedDeltaTime);
+            body.MovePosition(body.position + offset.normalized * movementSpeed * SpawnSpeedFactor * Time.fixedDeltaTime);
             return;
         }
         if (Time.time < nextAttackTime || offset.sqrMagnitude < 0.0001f) return;
@@ -121,6 +123,7 @@ public sealed class EnemyRanged : MonoBehaviour
 
     private void OnDisable()
     {
+        SpawnSpeedFactor = 1f;
         CancelWarning();
         target = null;
         pool = null;

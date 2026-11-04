@@ -15,6 +15,8 @@ public sealed class EnemyCharge : MonoBehaviour
 
     private enum Phase { Chase, Warning, Charge, Recovery }
     private Phase phase;
+    internal float SpawnSpeedFactor { get; set; } = 1f;
+
     private Rigidbody2D body;
     private Health health;
     private SpriteRenderer spriteRenderer;
@@ -72,6 +74,7 @@ public sealed class EnemyCharge : MonoBehaviour
 
     private void OnDisable()
     {
+        SpawnSpeedFactor = 1f;
         target = null;
         targetHealth = null;
         SetPhase(Phase.Chase);
@@ -112,7 +115,7 @@ public sealed class EnemyCharge : MonoBehaviour
         {
             if (Time.time < phaseEndTime)
             {
-                body.MovePosition(body.position + chargeDirection * chargeSpeed * Time.fixedDeltaTime);
+                body.MovePosition(body.position + chargeDirection * chargeSpeed * SpawnSpeedFactor * Time.fixedDeltaTime);
                 return;
             }
             SetPhase(Phase.Recovery);
@@ -137,7 +140,7 @@ public sealed class EnemyCharge : MonoBehaviour
             chargeDirection = direction;
             SetPhase(Phase.Warning);
             phaseEndTime = Time.time + warningSeconds;
-            float distance = chargeSpeed * chargeSeconds;
+            float distance = chargeSpeed * SpawnSpeedFactor * chargeSeconds;
             warning.transform.position = body.position + direction * distance / 2f;
             warning.transform.rotation = Quaternion.Euler(0f, 0f,
                 Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
@@ -148,7 +151,7 @@ public sealed class EnemyCharge : MonoBehaviour
             return;
         }
         body.MovePosition(body.position + direction *
-            Mathf.Min(offset.magnitude, movementSpeed * Time.fixedDeltaTime));
+            Mathf.Min(offset.magnitude, movementSpeed * SpawnSpeedFactor * Time.fixedDeltaTime));
     }
 
     private void SetPhase(Phase next)

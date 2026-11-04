@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
 
+public enum CharacterAffinity { None, DirectProjectiles, Ricochet }
+
 [CreateAssetMenu(fileName = "Personaje", menuName = "Conurbano Infinito/Personaje")]
 public sealed class CharacterData : ScriptableObject
 {
@@ -15,6 +17,7 @@ public sealed class CharacterData : ScriptableObject
     [SerializeField] private UpgradeData firstWeaponUpgrade;
     [SerializeField] private Sprite portrait;
     [SerializeField] private RuntimeAnimatorController animatorController;
+    [SerializeField] private CharacterAffinity affinity;
 
     public string DisplayName => displayName;
     public string Description => description;
@@ -24,6 +27,11 @@ public sealed class CharacterData : ScriptableObject
     public UpgradeData FirstWeaponUpgrade => firstWeaponUpgrade;
     public Sprite Portrait => portrait;
     public RuntimeAnimatorController AnimatorController => animatorController;
+    public float DirectProjectileDamageBonus => affinity == CharacterAffinity.DirectProjectiles ? 0.1f : 0f;
+    public int RicochetBonus => affinity == CharacterAffinity.Ricochet ? 1 : 0;
+    public string AffinityDescription => affinity == CharacterAffinity.DirectProjectiles ?
+        "+10% de daño: Termo y Boleadora." : affinity == CharacterAffinity.Ricochet ?
+        "+1 rebote: sólo armas Ricochet (Pelota)." : "Sin afinidad adicional.";
 
     private static CharacterData[] all;
     private static CharacterData selected;

@@ -87,15 +87,17 @@ public sealed class UpgradeSelection : MonoBehaviour
         focusedOption = 0;
         options.Clear();
         available.Clear();
+        UpgradeData evolution = NextEvolution();
+        if (evolution != null) options.Add(evolution);
         foreach (UpgradeData upgrade in upgrades)
         {
-            if (CanOffer(upgrade) && !available.Contains(upgrade))
+            if (CanOffer(upgrade) && upgrade.Effect != UpgradeEffect.EvolveWeapon && !available.Contains(upgrade))
             {
                 available.Add(upgrade);
             }
         }
 
-        for (int i = 0; i < 3 && i < available.Count; i++)
+        for (int i = 0; options.Count < 3 && i < available.Count; i++)
         {
             int chosen = Random.Range(i, available.Count);
             (available[i], available[chosen]) = (available[chosen], available[i]);
@@ -104,7 +106,7 @@ public sealed class UpgradeSelection : MonoBehaviour
 
         if (firstSelection && firstWeaponUpgrade != null &&
             available.Contains(firstWeaponUpgrade) && !options.Contains(firstWeaponUpgrade))
-            options[0] = firstWeaponUpgrade;
+            options[options.Count - 1] = firstWeaponUpgrade;
 
         isShowing = true;
         Time.timeScale = 0f;
@@ -112,6 +114,13 @@ public sealed class UpgradeSelection : MonoBehaviour
 
     private bool CanOffer(UpgradeData upgrade) =>
         upgrade != null && upgrade.CanOffer(weapon) && GetLevel(upgrade) < upgrade.MaximumLevel;
+
+    private UpgradeData NextEvolution()
+    {
+        foreach (UpgradeData recipe in UpgradeData.EvolutionCards)
+            if (CanOffer(recipe)) return recipe;
+        return null;
+    }
 
     private void Update()
     {
@@ -152,6 +161,7 @@ public sealed class UpgradeSelection : MonoBehaviour
         lastSelectionFrame = Time.frameCount;
         if (IsFallback)
         {
+            if (NextEvolution() != null) { ShowNext(); return; }
             // Rebuild if the inventory changed while this choice was open.
             foreach (UpgradeData upgrade in upgrades)
                 if (CanOffer(upgrade)) { ShowNext(); return; }
@@ -227,6 +237,7 @@ public sealed class UpgradeSelection : MonoBehaviour
                 20, GameUi.Ink, TextAnchor.UpperCenter, true);
             string action = upgrade == null ? "Catálogo agotado" : upgrade.IsPassive ?
                 (level == 0 ? "Adquirir pasiva" : "Mejorar pasiva") :
+                upgrade.Effect == UpgradeEffect.EvolveWeapon ? "Evolucionar arma · 8/8" :
                 $"{(upgrade.Effect == UpgradeEffect.EquipWeapon ? "Adquirir" : "Mejorar")} arma · {(upgrade.Effect == UpgradeEffect.EquipWeapon ? 1 : weapon.GetWeaponLevel(upgrade.TargetWeapon) + 1)}/{BuildRules.Current.MaximumWeaponLevel}";
             GameUi.Text(new Rect(face.x + 24, face.y + 324, 240, 28), action,
                 18, GameUi.Petrol, TextAnchor.MiddleCenter);

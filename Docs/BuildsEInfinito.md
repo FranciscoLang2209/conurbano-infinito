@@ -536,3 +536,240 @@ Las otras seis entradas y variables son las mismas de etapa 1; `run_checks.py` d
 **Cómo probar jugando:** abrir Menu en la raíz Unity correcta y entrar con cualquiera de los dos personajes. Para tiros, conservar Termo (o adquirirlo con La Piba), elegir Bolsa hasta N3 y Yerba: debe haber un proyectil más, sin ocupar otro espacio de arma. Adquirir Boleadora después también recibe +1. Para área, adquirir Petardo y buscar Antena: el radio aumenta con cada nivel, hasta +50%; Bolsa no multiplica explosiones. Al reunir cuatro pasivas sólo vuelven a salir mejoras de las propias; observar cuatro slots y sus niveles. Confirmar primera oferta de cada perfil, elección por 1–3/flechas/Enter/mouse, Esc y reanudación sin perder elecciones, y R después de morir para limpiar inventario. Agotar la build para ver curación/continuar; como depende de XP/azar en clásico, el check automatizado lo reproduce con catálogos acotados. No cambiar assets para forzarlo. No se garantiza ninguna de estas builds en las primeras tres ofertas.
 
 **Pendiente y fuera de esta etapa:** balance humano (incluido coste de Bolsa N1/N2 y frecuencia de Petardo/Antena), prueba completa con mouse físico, build del jugador, Windows, FPS/frame time/GC/memoria/soak. No se afirma evidencia de estos puntos. Afinidades, sinergias, evoluciones, infinito, puntaje y récords siguen como diseño de etapas 3–9; no están implementados ni garantizados por esta etapa. No se hizo push, merge, publicación ni despliegue.
+
+
+### Etapa 3 — Afinidades y sinergias — 2026-11-03
+
+Cierre de evidencia: 2026-11-04.
+
+**Alcance implementado:** únicamente etapa 3, secciones 3.1/3.4. Base `7f45fa049507560a0e923fc44b8293810ff0deef`, rama `main`, árbol inicialmente limpio; etapas 1/2 ya integradas. Raíz Unity verificada con Assets/Packages/ProjectSettings: `Conurbano Infinito/`. No hay AGENTS.md/CLAUDE.md en repo/ancestros; se siguieron contexto, baseline, PartidaCorta y guías locales de UI/arte. El adjunto se usó como contrato de diseño para esta etapa, sin ejecutar sus otros prompts. No se modificaron escenas, prefabs, arte, paquetes, ajustes, Assets exterior ni meta existentes; no se ejecutaron herramientas históricas de regeneración.
+
+**Comportamiento nuevo:**
+
+- **El Pibe:** +10% de daño sólo para las definiciones etiquetadas explícitamente como proyectil directo (Termo y Boleadora). Se suma al porcentaje general: `(base + planos) × (1 + porcentaje general + 0,10)`. Con Parrilla es ×1,30, no ×1,32. Daño float hasta Health; el getter entero legacy conserva su redondeo y DamageMultiplier sigue representando únicamente el bonus general.
+- **La Piba:** +1 rebote sólo si el patrón del arma es Ricochet. Pelota base pasa de tres a cuatro blancos; no cambia pierce de Boleadora, Straight, Returning ni otras armas. Ambos personajes conservan vida, velocidad, arma inicial, primera oferta, retrato y animaciones. El selector explica la afinidad.
+- **Mate de Guardia:** Termo N4 + Yerba N3. Cada cuarto ataque del Termo agrega un proyectil. Un ataque es una llamada de Fire con blanco válido, sin contar por separado cada proyectil. Con varios proyectiles se incrementa una sola vez; rige el máximo global de doce.
+- **Potrero Veloz:** Pelota N4 + Zapatillas N3. Velocidad de proyectil ×1,20, compuesta con mejoras dirigidas. Una activación, sin acumular multiplicadores al mejorar otra carta. Las Pelotas ya activas conservan su velocidad anterior.
+- **Festejo del Barrio:** Pelota N4 + Petardo N4. Cada quinto impacto directo válido de Pelota prepara **una** carga. Cuentan rebotes e impactos letales sobre blancos previamente vivos. No cuentan duplicados del mismo proyectil/blanco, blancos ya muertos, capa ajena, daño rechazado ni explosiones/orbitales. Mientras está lista no se guardan impactos para otra carga. Se consume al comenzar el siguiente ataque de Petardo, que recibe radio ×1,25 en todos sus proyectiles; el ataque siguiente vuelve al radio normal. Compone con Antena y mejoras dirigidas de radio.
+- Tres recetas editables con IDs/niveles explícitos; no se deduce ninguna regla desde nombres visibles. Se evalúan al adquirir/mejorar armas o pasivas, no por frame, y se activan una sola vez por sesión en cualquier orden de adquisición. Contadores a cero al activar y al reiniciar; no se otorgan puntos.
+- GameHud encola avisos breves y los presenta al reanudar gameplay después de una elección. Una etiqueta pequeña señala **Festejo listo · Petardo +25%**. Esc abre afinidad y las tres recetas con requisitos, efecto y estado activo/pendiente; conserva los botones y navegación actuales. No hay otro panel grande durante combate.
+
+**Archivos relevantes**, relativos a la raíz Unity:
+
+| Archivo | Responsabilidad |
+| --- | --- |
+| `Assets/_Game/Scripts/Player/SynergyData.cs` y `Assets/_Game/Resources/Synergies/` | Tres definiciones SO inmutables de sesión: IDs de receta/requisitos, niveles, frecuencia, multiplicador y textos; carga/validación como las reglas existentes. |
+| `Assets/_Game/Scripts/Player/BuildSynergies.cs` y `BuildState.cs` | Activaciones, contadores y carga runtime; sin scripting genérico ni estado de partida en assets. |
+| `Assets/_Game/Scripts/Player/{WeaponController,BuildStatistics}.cs` | Personaje de sesión, evaluación de requisitos, fórmula de afinidad, velocidad, rebotes y snapshot por ataque. |
+| `Assets/_Game/Scripts/Combat/Projectile.cs` | Origen de arma/controlador por disparo; notificación local sólo después de daño directo aceptado. OnDisable limpia ambos al volver al pool; explosiones y orbitales no notifican procs. No se agrega un bus de combate ni un callback por proyectil. |
+| `Assets/_Game/Scripts/{Player/CharacterData,Combat/WeaponData}.cs` | Campos nuevos compatibles: affinity=None y directProjectile=false. Sólo los dos personajes y Termo/Boleadora reciben un campo adicional en sus assets. |
+| `Assets/_Game/Scripts/Player/{GameHud,GameManager,MenuScreen}.cs` | Avisos, carga, consulta en pausa y afinidad en selector, reutilizando GameUi/IMGUI. Suscripción de avisos retirada en OnDisable. |
+| `Assets/_Game/Editor/SynergyCheck.cs` y meta | Prueba nueva con elecciones reales, fixtures dirigidos, colisiones físicas, pausas, pool y capturas/layout. |
+| `Assets/_Game/Editor/{BuildStateCheck,BallCheck}.cs` | Expectativas adaptadas al +10% del Pibe y al rebote adicional de La Piba, preservando pruebas de fracciones, blancos únicos, alcance, capas, física y pool. |
+
+GUIDs/fileIDs/campos anteriores y valores de WeaponPattern/UpgradeEffect intactos. Nuevo CharacterAffinity con None=0 para definiciones previas no migradas; no se renombra ni convierte ningún campo. Sin guardados anteriores de builds que migrar. Nuevos meta: dos scripts runtime, un check, carpeta de sinergias y tres assets (siete); los existentes permanecen idénticos. No requiere cableado en Main/Inspector.
+
+**Validación y alcance de la evidencia:** Unity **6000.3.23f1**, macOS **26.5.2 / MacBook Air Apple M3 / 8 GiB / Metal**. Batchmode con gráficos, copia aislada indicada en `TestResults/BuildsEInfinito/Etapa3-20261103/project-path.txt`; el proyecto original no se abrió en el Editor. Compilación de Assembly-CSharp/Assembly-CSharp-Editor y pruebas en sesiones nuevas. Antes de editar pasaron BuildStateCheck (71,15 s incluyendo importación inicial) y BallCheck (14,96 s) sobre el baseline, ambos salida 0; ambos reprodujeron la excepción conocida del Editor SearchDatabase.
+
+| Entrada real | Salida final | Alcance principal |
+| --- | --- | --- |
+| `SynergyCheck.RunBatch` | 0, 25.54 s | Afinidades/órdenes/activación única, ataques/impactos/carga, composición, pool, impacto letal, física/pausa, reinicio e inmutabilidad; UI cuatro resoluciones. |
+| `PassiveSelectionCheck.RunBatch` | 0, 32.73 s | Cupos, compatibilidad, Antena/Bolsa, cola, doble entrada, fallback, pausa, muerte/reinicio y cuatro resoluciones. |
+| `BuildStateCheck.RunBatch` | 0, 12.12 s | IDs/niveles, fórmula con afinidad, fracciones, límites, snapshot/orbitales, selección y Hito6. |
+| `CharactersCheck.RunBatch` | 0, 19.66 s | Ambos perfiles, primera oferta, selector/animaciones/reinicio; ShortRun de ambos personajes. |
+| `CombatFeaturesCheck.RunBatch` | 0, 15.01 s | Doce ciclos/seis enemigos, Health/XP/pool, Expansion/Petardo/VisualSlice5/ShortRun. |
+| `BallCheck.RunBatch` | 0, 14.83 s | Ambos personajes, 6/7 impactos mejorados únicos; base de La Piba con cuatro colisiones reales, pausa, alcance, capas y pool. |
+| `PitchCheck.RunBatch` | 0, 32.63 s | POIs, resistencia física de seis segundos, órdenes, curación/Quilombo/reinicio e indicadores en cuatro resoluciones. |
+| `UiRedesignCheck.RunBatch` | 0, 64.76 s | 34 cartas en cuatro resoluciones, foco/teclado, selector, menús, pausa, resultados y layout sin desbordes. |
+
+**Ocho entradas aprobadas** en procesos nuevos; sin errores C#, de gameplay o asserts reportados en los resultados finales. Cada proceso registró una excepción conocida de SearchDatabase, también presente en los dos procesos de baseline. Las dos repeticiones de `final-targeted/` sólo cambian el fixture/registros de Editor, sin cambios runtime o de valores de assets. `final-import/` vuelve a aprobar SynergyCheck tras limpiar únicamente espacios finales en siete YAML/meta nuevos.
+
+
+SynergyCheck cubre las siete armas con ambos personajes, etiquetas explícitas y exclusividad Ricochet; seis combinaciones de orden para las tres recetas; umbrales, aviso único y nuevas mejoras sin reactivación; ocho ataques de Termo con varios proyectiles y tope 12; velocidad/snapshot de Potrero; quinto impacto, duplicados, muertos, capa ajena, carga única sin acumular impactos, consumo del ataque completo, composición con Antena/radio dirigido, exclusión de explosiones, limpieza de origen y reuso de la misma instancia, impacto letal y bloqueo con dueño muerto. La física real comprueba cuatro blancos con La Piba, carga en el quinto impacto y pausa de proyectil/carga. Reinicia ambos personajes y compara serialización de definiciones antes/después para descartar mutación de SO.
+
+**UI:** 1280×720, 1024×768, 1920×1080 y 2560×1080. El check nuevo captura recetas activas/pendientes, carga lista y aviso de Mate; el existente recorre las 34 cartas, selector y flujos de menú/pausa/resultados. Inspección visual de pausa activa a 1024×768, requisitos a 1920×1080 y carga a 1280×720; también selector 1024×768 y aviso de Mate 1280×720. Los informes finales `text-layout.txt` no registran desbordes. El uso de XP, catálogos y blancos controlados demuestra integración, no una build obtenida naturalmente, diversión o balance.
+
+**Incidencias preservadas:** `attempt1/` contiene la primera corrida: reglas, combate y física aprobados, pero texto de Festejo listo de tres líneas en un área para dos a 1024×768. Se reemplazó el texto de carga en pausa por una frase corta, conservando el requisito y el efecto; no se agrandó el panel ni se redujo tipografía. La repetición aprobó las cuatro resoluciones. Después se precisó la prueba del cuarto/quinto impacto tras consumir carga, añadiendo un impacto letal; se repitieron los dos checks de Editor afectados. La excepción `UnityEditor.Search.SearchDatabase` también aparece en el baseline y se contabiliza separadamente en cada proceso; no se atribuye a gameplay ni se oculta. Se conservaron mensajes ambientales de licencia/Metal/dotnet/cierre.
+
+**Evidencia local, ignorada por git:** `TestResults/BuildsEInfinito/Etapa3-20261103/`: snapshot y HEAD/status iniciales, baseline, intentos, logs, capturas, comandos/argv/salidas (`results.json`), scripts de reproducción, hashes de fuentes e integridad. `final-targeted/` contiene la repetición final de sinergias/Pelota después de precisar el fixture y su registro; las otras seis suites no requirieron repetición porque runtime/assets permanecieron idénticos. La comparación final confirma 597 archivos Unity de Assets/Packages idénticos en original y copia probada (se excluyen ocho `.gitkeep`, ignorados por Unity). La integridad estática verifica 316 GUIDs meta únicos, meta existentes intactos, cuatro assets previos con una sola línea añadida, enums serializados conservados y ninguna modificación en rutas protegidas. `git diff --check` sin errores. Las preferencias/ajustes de la copia son descartables porque los checks cambian resoluciones y estado del Editor.
+
+**Reproducción:** copiar Assets, Packages y ProjectSettings de `Conurbano Infinito/` a un directorio vacío; no usar una sesión con trabajo sin guardar. Unity 6000.3.23f1, gráficos habilitados, sin `-nographics`, sin `-quit` (cada entrada cierra el proceso). No ejecutar menús Setup/Apply/Generate. Prueba nueva:
+
+```sh
+UNITY_BIN=/Applications/Unity/Hub/Editor/6000.3.23f1/Unity.app/Contents/MacOS/Unity
+QA_PROJECT=/ruta/absoluta/copia-unity
+QA_OUTPUT=/ruta/absoluta/resultados
+mkdir -p "$QA_OUTPUT/synergies"
+CONURBANO_SYNERGIES_OUTPUT="$QA_OUTPUT/synergies" "$UNITY_BIN" -batchmode -projectPath "$QA_PROJECT" -executeMethod SynergyCheck.RunBatch -logFile "$QA_OUTPUT/synergies.log"
+```
+
+Las otras siete entradas/variables son las registradas en etapa 2. `run_checks.py` ejecuta las ocho en orden con salida por proceso y se detiene al primer fallo; `results.json` conserva las rutas reales. `CONURBANO_ART_SAMPLE` debe estar ausente para comprobar todas las cartas.
+
+**Cómo probar jugando:** abrir Menu en la raíz correcta. El selector informa la afinidad; entrar con El Pibe para Termo/Boleadora +10%, o La Piba para Pelota con un rebote más. Reunir Termo N4/Yerba N3 y observar un proyectil extra cada cuatro ataques; reunir Pelota N4/Zapatillas N3 y notar la velocidad adicional; reunir Pelota N4/Petardo N4, golpear cinco veces con Pelota (cuentan rebotes) y observar carga lista y la siguiente explosión ampliada. Esc muestra las recetas antes y después de activarse. Elegir con teclado o mouse, pausar durante una elección y volver; no deben perderse elecciones. R al terminar limpia sinergias/carga y conserva personaje; M permite cambiarlo. Los requisitos no se garantizan en las primeras ofertas y obtenerlos en clásico depende de XP/azar. Para reproducir todos sin cambiar assets usar el check aislado, que fuerza progresión; no es una sesión de competencia ni una partida humana.
+
+**Límites y diseño pendiente:** no se ejecutaron build del jugador, Windows, mouse físico completo, balance humano, FPS/frame time/GC/memoria ni soak; no se afirma evidencia de esos puntos. Evaluar frecuencia de ofertas y tiempo hasta sinergia jugando antes de ajustar balance. Etapas 4–9 siguen como diseño: no se implementan evoluciones, infinito, puntaje, récords ni servicios. No hubo push, merge, publicación ni despliegue.
+
+
+### Etapa 4 — Evoluciones — 2026-11-04
+
+**Alcance implementado y comprobado:** únicamente etapa 4, sección 3.5 y su integración con las etapas 1–3. HEAD `7f45fa049507560a0e923fc44b8293810ff0deef`, rama `main`; se recibió el trabajo local de etapa 3 sin commit (17 archivos modificados y sus scripts/datos nuevos). Se preservó ese trabajo, incluyendo sus registros históricos. Raíz Unity confirmada por Assets/Packages/ProjectSettings y ProjectVersion: `Conurbano Infinito/`, Unity 6000.3.23f1. No se encontró AGENTS.md/CLAUDE.md en repo/ancestros; se siguieron contexto, baseline, PartidaCorta y guías locales de UI/arte. No se ejecutaron los otros prompts del adjunto.
+
+**Comportamiento:**
+
+- Dos recetas/cartas `UpgradeData` en `Assets/_Game/Resources/Evolutions/`, editables en Inspector: familia objetivo, pasiva requerida, efecto y parámetros. Exigen arma N8 (máximo del perfil), su pasiva al máximo y una Jefa derrotada en esta sesión. El evento de muerte real de WaveDirector llega a GameManager/WeaponController; el logro persiste aunque falten arma o pasiva. Desactivar/despawnear al jefe no otorga el logro. Suscripciones equilibradas en enable/disable y retiradas al morir el jefe.
+- Una receta lista ocupa la primera opción de la siguiente elección; las restantes opciones siguen siendo cartas distintas válidas, hasta tres. Si hay dos listas, orden ordinal de ID: `evolution.pelota-final` antes de `evolution.termo-acero`. Tras consumir la primera, la segunda aparece en la siguiente selección, también si ya estaba en cola. Cada receta se aplica una sola vez; pausa, revalidación, fallback y guardia de doble entrada se conservan.
+- La evolución reemplaza **la identidad runtime del mismo espacio** mediante `BuildState.Weapon.Evolution`; conserva la definición de familia `Data`, nivel N8, bonus, cadencia pendiente y contadores. No se duplican WeaponData ni armas. `GetEquippedWeapon` conserva su contrato de definición de familia; `GetEvolution`, `GetWeaponIdentity` y `GetWeaponDisplayName` exponen evolución, ID y nombre actuales. Esto mantiene compatibles pasivas, afinidades, checks y las tres sinergias por familia. Arma base y mejoras normales dejan de ofrecerse; ni la evolución ni mejorar otras armas alteran orbitales ajenos.
+- **Termo de Acero Inoxidable:** dos pulsos separados por 0,12 s activos; mismo intervalo entre inicios de ráfaga. El segundo usa 50% del daño del ataque, sin redondear. Conserva cantidad normal de proyectiles; el extra de cada cuarto ataque de Mate sólo aparece en el primero. Los dos pulsos comparten el tope global de doce proyectiles por ataque: se prioriza el primero y se limita el segundo al presupuesto restante. El catálogo actual no llega a saturarlo; cantidades forzadas por QA no permiten superar doce. Dirección, daño, velocidad, cantidad y pierce pendientes son snapshots al iniciar la ráfaga. El segundo pulso sale desde la posición actual del jugador en esa dirección; no retiene blanco ni callbacks de proyectiles. Si muere el blanco, el pulso puede salir sin buscarlo. Pausa y elección congelan el tiempo; muerte, desactivación, cierre y recarga cancelan el pulso pendiente. No se acumula otra ráfaga sobre un pulso pendiente.
+- **Pelota de Final de Barrio:** suma dos rebotes a los comprados y a la afinidad exclusiva Ricochet de La Piba. Prioriza blancos vivos no visitados; cuando no encuentra otro a alcance, puede volver **una vez** al primer blanco, después de al menos otro impacto válido. Ese retorno consume el presupuesto finito de impactos, causa daño y cuenta para Festejo; no borra el conjunto de visitados ni inicia ciclos. El primer blanco debe seguir vivo, activo y en la misma vida (`Health.LifeId`, incrementado al reiniciar para pool). Morir o reutilizarse impide el retorno. Pool limpia origen, primer blanco, permisos y contadores del proyectil.
+- Arte existente, ligero tinte dorado de proyectiles, borde dorado y `E 8` en HUD; tooltip con el nombre nuevo. Se conserva IMGUI/GameUi, tipografía, teclado/mouse y disposición irregular de la plaza. Los proyectiles anteriores a evolucionar conservan su snapshot.
+
+**Archivos relevantes**, relativos a la raíz Unity:
+
+| Archivos | Cambio de esta etapa |
+| --- | --- |
+| `Scripts/Player/UpgradeData.cs`, `Resources/Evolutions/{PelotaDeFinal,TermoDeAcero}.asset` dentro de `Assets/_Game/` | Recetas/cartas con IDs estables, validación al cargar y efecto EvolveWeapon=13 al final del enum. Nuevos campos con defaults compatibles; ninguno previo renombrado. |
+| `Assets/_Game/Scripts/Player/{BuildState,BuildStatistics,WeaponController}.cs` | Identidad evolucionada y logro de sesión, snapshot/pulso pendiente, bonus de rebotes y APIs compatibles. |
+| `Assets/_Game/Scripts/Player/{UpgradeSelection,GameHud,GameManager}.cs` | Oferta garantizada, presentación de carta/equipamiento y recepción del logro del jefe. |
+| `Assets/_Game/Scripts/Enemy/WaveDirector.cs`, `Scripts/Combat/{Projectile,Health}.cs` dentro de `Assets/_Game/` | Evento de jefe derrotado, retorno único y generación de vida para no confundir una instancia reutilizada con el blanco original. |
+| `Assets/_Game/Editor/EvolutionCheck.cs` y su meta | Check nuevo de reglas, integración Play Mode, física, cancelación, pool, entrada y layout. |
+| `Assets/_Game/Editor/BuildStateCheck.cs` | Expectativa y registro de 46 IDs (antes 44): las dos identidades nuevas, conservando las aserciones anteriores. |
+| `Assets/_Game/Editor/CombatFeaturesCheck.cs` | Sincroniza dos muestras de pausa con el límite de frame; conserva sprite/posición y añade estabilidad de normalizedTime. Corrección acotada de fixture, sin cambiar animación runtime. |
+
+Sin cambios adicionales de esta etapa en escenas, prefabs, arte, datos existentes, paquetes, ajustes, Assets exterior ni meta previos. Se agregan dos assets, su carpeta y un check (cuatro meta nuevos, **320 GUIDs únicos** en total). Se conservan GUIDs, fileIDs, campos y todos los valores anteriores de enums. No se requiere migración de assets existentes ni cableado en Main: Resources incorpora las recetas al flujo actual. La comparación SHA-256 contra el árbol recibido valida la preservación de esas rutas, incluyendo el trabajo previo de etapa 3.
+
+**Validación realmente ejecutada:** Unity **6000.3.23f1**, macOS **26.5.2**, **Apple M3 / 8 GiB / Metal**, batchmode con gráficos en copia aislada. Runtime y Editor recompilaron; original sin abrir en Unity. Un proceso nuevo por entrada:
+
+| Entrada real | Salida / segundos | Alcance |
+| --- | --- | --- |
+| `EvolutionCheck.RunBatch` | 0 / 22,95 | Dos recetas; cuatro órdenes de requisitos/jefe y umbral de pasiva aislado, doble consumo, cuatro espacios, tres ofertas distintas/garantía/cola, teclado, orbitales, ráfaga/tope compartido, retorno, pool, reinicio vivo y UI. |
+| `SynergyCheck.RunBatch` | 0 / 23,05 | Ambas afinidades, tres sinergias/órdenes, contadores, cargas, snapshot, física/pausa/pool y UI. |
+| `PassiveSelectionCheck.RunBatch` | 0 / 23,15 | Cupos, compatibilidad, pasivas, selección, fallback, cola, pausa/muerte/reinicio y UI. |
+| `BuildStateCheck.RunBatch` | 0 / 12,10 | 46 IDs, siete familias N1→N8, cálculos/clamps, snapshots/orbitales y Hito6. |
+| `CharactersCheck.RunBatch` | 0 / 18,53 | Perfiles, selección/animaciones/reinicio y ShortRun de ambos. |
+| `CombatFeaturesCheck.RunBatch` | 0 / 17,47 | Health/XP/pool de seis enemigos, Expansion/Petardo/VisualSlice5/ShortRun. |
+| `BallCheck.RunBatch` | 0 / 14,00 | Adquisición/mejoras y rebotes, blancos únicos, capas, alcance, física, pausa y pool. |
+| `PitchCheck.RunBatch` | 0 / 33,15 | POIs, Quilombo, curación, órdenes, resistencia física, reinicio e indicadores. |
+| `UiRedesignCheck.RunBatch` | 0 / 42,47 | 34 cartas normales, cuatro resoluciones, foco/teclado, pausa/reinicio/menú y resultados. Las dos cartas de evolución las recorre el check nuevo. |
+
+**Nueve suites aprobadas** con el tope de ataque compartido. Las primeras cinco corresponden a la última corrida completa; después de corregir el fixture de pausa se reejecutaron combate y las tres entradas restantes en `final-remainder/`, sin más cambios runtime/assets. Se conservan además las corridas completas y repeticiones previas. Resultados finales sin errores C#, de gameplay ni asserts reportados. En cada proceso se conserva una excepción conocida de `UnityEditor.Search.SearchDatabase`, también registrada en la evidencia previa de etapa 3; se contabiliza aparte, junto con mensajes ambientales de licencia/Metal/dotnet/cierre. No se ocultaron errores ni eliminaron aserciones.
+
+El check nuevo aplica las cartas mediante XP/selección reales y verifica una evolución con cada personaje: Termo con El Pibe y Pelota con La Piba. Para los requisitos usa los dos órdenes arma/pasiva, jefe previo/posterior, arma N7 y pasiva N4 no elegibles. Comprueba recetas listas simultáneas, tres ofertas distintas, cola de dos, teclado 1 y Select coincidentes, bloqueo en pausa, rechazo de adquisición/mejoras base y aplicación doble. Conserva N8, estadísticas/intervalo y las tres sinergias, con orbitales ya activos. Cuatro ataques de Termo prueban Mate sólo en primer pulso, pausa y elección con pulso pendiente, snapshot tras bonus posterior, blanco destruido, muerte y reinicio vivo con pulso en vuelo. También se fuerza cantidad +100 y se comprueba que los dos pulsos juntos nunca exceden doce. Un caso aislado por receta comprueba pasiva N4 rechazada/N5 válida con arma N8 y jefe ya derrotado. Pelota prueba +2 y afinidad/bonus comprados, velocidad Potrero, duplicados, retorno único, muertos, cambio de vida y Festejo. Física real verifica A→B→A con pausa; reuso de la misma instancia de proyectil comprueba limpieza. Las definiciones SO se comparan antes/después y permanecen inmutables. **Los fixtures controlan XP, blancos y el Tick del jefe; esto no es evidencia de progresión natural, supervivencia humana ni balance.**
+
+UI nueva comprobada en **1280×720, 1024×768, 1920×1080 y 2560×1080**; informes finales de layout vacíos. Se inspeccionaron visualmente ambas cartas a 1024×768, oferta de tres cartas a esa resolución y HUD evolucionado a 1280×720. Se conserva tipografía, no se reduce texto para hacerlo caber. Integridad final: **604 archivos de Assets/Packages idénticos entre original y copia probada**, excluidos ocho `.gitkeep` ignorados por Unity; meta existentes y rutas protegidas intactos. `git diff --check` aprobado.
+
+**Intentos conservados:** `attempt1/` registra un error del check nuevo por acceder a BuildStatistics internal desde Assembly-CSharp-Editor; el fixture pasó a filtrar por el enum público. `attempt2/` conserva el primer recorrido de requisitos/cola/ráfaga aprobado y una expectativa que omitía los rebotes dirigidos comprados al subir Pelota a N8. `attempt3/` ya aprueba las dos mecánicas/física, pero falla por descripciones cortadas (ocho casos de layout en cuatro resoluciones). Se acortó la copia de ambas cartas manteniendo información esencial y sin agrandar panel ni bajar fuente. Las corridas completas y repeticiones ampliadas se conservan en `before-attack-cap/`. La revisión final precisó el tope de doce por ataque completo (no por pulso): se limitó el segundo al presupuesto restante y se agregó el caso de cantidad +100; se repitieron las nueve suites sobre esa fuente final.
+
+**Incidencia de pausa del check anterior:** la segunda corrida completa se detuvo en `Dog animates during pause`; una sonda posterior se detuvo antes en `Pause advances player animation`. Se aisló un muestreo anterior a la evaluación del Animator del mismo frame: con timeScale=0 y reloj/posición estables, normalizedTime avanzaba exactamente el delta pendiente del clip. En el candidato: jugador 0,41009602→0,415124118 con delta 0,003519664 (clip 0,7 s); perro 0,32200563→0,32503587 con delta 0,0015151219 (clip 0,5 s). Una copia nueva reconstruida desde los hashes iniciales también mostró ese delta pendiente (perro 0,340776026→0,3445576 con delta 0,00189079507), previo a etapa 4. Según cruce o no una clave de sprite, la aserción fallaba o pasaba. Se corrigió únicamente CombatFeaturesCheck para muestrear tras un límite explícito de frame, manteniendo las aserciones de sprite/posición y agregando normalizedTime estable; no se agregó un sleep de asentamiento ni se tocaron clips/prefabs/runtime. La copia inicial con fixture corregido aprobó. Las sondas temporales se eliminaron; `pause-hypotheses.md` registra experimentos y logs. El primer intento de reutilizar la Library de QA de etapa 3 no compiló su caché de paquetes; se conserva como intento ambiental inutilizable, no como resultado de gameplay. La comparación válida usa copia nueva de fuentes iniciales, versiones intactas.
+
+**Evidencia local ignorada:** `TestResults/BuildsEInfinito/Etapa4-20261104/`: HEAD/status/diff y SHA iniciales, `attempt1/2/3`, `before-attack-cap/` (incluye sus repeticiones dirigidas), `results-full-run.json` (resultados finales consolidados), `final-remainder/` (combat/Pelota/POIs/UI tras corregir el fixture), logs/capturas finales, sondas y baseline de pausa, scripts de reproducción, entorno, hashes y controles de integridad. `project-path.txt` conserva la copia usada. `stage4-runtime-and-checks.diff` permite distinguir las modificaciones sobre las fuentes recibidas de etapa 3; el diff inicial conserva el trabajo local ajeno.
+
+**Reproducción segura:** copiar Assets, Packages y ProjectSettings de `Conurbano Infinito/` a un directorio vacío; usar exactamente Unity 6000.3.23f1, con gráficos habilitados, sin `-nographics` ni `-quit` (la entrada cierra el proceso). No ejecutar Setup/Apply/Generate ni usar una sesión con trabajo sin guardar. El check altera su sesión de prueba y preferencias de Editor; no guarda escenas ni debe ejecutarse sobre una futura partida de competencia.
+
+```sh
+UNITY_BIN=/Applications/Unity/Hub/Editor/6000.3.23f1/Unity.app/Contents/MacOS/Unity
+QA_PROJECT=/ruta/absoluta/copia-unity
+QA_OUTPUT=/ruta/absoluta/resultados
+mkdir -p "$QA_OUTPUT/evolutions"
+CONURBANO_EVOLUTIONS_OUTPUT="$QA_OUTPUT/evolutions" "$UNITY_BIN" -batchmode -projectPath "$QA_PROJECT" -executeMethod EvolutionCheck.RunBatch -logFile "$QA_OUTPUT/evolutions.log"
+```
+
+El runner guardado ejecuta las nueve entradas en procesos nuevos y se detiene al primer fallo. `CONURBANO_ART_SAMPLE` debe estar ausente para revisar todas las cartas normales. La reproducción aislada no escribe marcas; todavía no existen puntaje/persistencia de etapas 6/7. No se agregó un cheat de evolución al juego. El marcado de práctica de futuras sesiones de QA sigue siendo contrato pendiente de etapa 6.
+
+**Cómo probar jugando:** desde Menu elegir El Pibe; subir Termo a N8 mediante siete mejoras dirigidas, Yerba a N5, derrotar a La Jefa (aparece a 03:00) y recoger XP para otra elección. Elegir Termo de Acero Inoxidable; observar dos pulsos, segundo más débil, y cada cuarto ataque de Mate con extra sólo en el primero. Para La Piba, adquirir Pelota, llevarla a N8 y Zapatillas a N5, matar a La Jefa y elegir Pelota de Final de Barrio en la subida siguiente. Con pocos blancos cercanos puede verse el retorno tras otro impacto; con más enemigos prioriza los no visitados. El logro del jefe vale aunque se lo mate antes de completar los niveles. Mirar borde dorado/`E 8` y pasar mouse por el espacio para leer el nombre. Esc y una elección deben congelar los pulsos; al reiniciar con R se limpian evolución, logro y pendientes. Los niveles y otra subida posterior al jefe no están garantizados dentro de los cuatro minutos: la prueba aislada reproduce ambos casos sin alterar assets ni futuras partidas.
+
+**Límites:** esta etapa no implementa infinito, puntaje, récords, ranking ni contenido adicional. No se generó build de jugador, ni se probó Windows, mouse físico completo, balance humano, FPS/frame time/GC/memoria o soak. Sigue pendiente medir cuánto tarda una evolución en una partida normal antes de cambiar balance. No hubo commit, push, merge, publicación ni despliegue.
+
+
+### Etapa 5 — Modo infinito y estabilidad — 2026-11-04
+
+**Alcance implementado:** únicamente etapa 5/sección 4, sobre HEAD `7f45fa049507560a0e923fc44b8293810ff0deef` y el árbol local recibido de etapas 3–4, preservado. El usuario confirmó esta etapa en la sesión. Remoto `FranciscoLang2209/conurbano-infinito`, raíz real `Conurbano Infinito/`, Unity 6000.3.23f1. No se encontraron AGENTS.md/CLAUDE.md en repo/ancestros. Se leyeron contexto, baseline, PartidaCorta y guías locales de UI/arte. El adjunto se usó como contrato de diseño; no se ejecutaron los otros prompts. Sin commit, push, merge, publicación ni despliegue.
+
+**Comportamiento e integración:**
+
+- Selector existente de dos personajes con botones **Clásico · 4 min / Infinito**, usando GameUi/IMGUI. Mouse, Tab/flechas/Enter y acceso rápido al botón de jugar; permanece el foco previo de Volver/A la plaza. Menú informa ambos modos. Reinicio conserva personaje y modo, y limpia sesión, sinergias, evoluciones, logro de jefe, POIs, pool y contadores. Una aplicación nueva comienza en Clásico.
+- `RunRules` contiene dos definiciones SO en `Resources/RunRules/{Clasico,Infinito}.asset`, IDs `mode.classic-v1` y `mode.endless-v1`. `GameManager.Configuration` posee un **snapshot inmutable** de escalares por partida: ningún reloj, enemigo, contador o selección se escribe en los assets. No se duplica Main. El campo serializado legacy `durationSeconds` permanece intacto y sigue gobernando el plazo clásico; en infinito `HasTimeLimit=false` y `DurationSeconds=0` indica ausencia de plazo. Se revisaron sus consumidores runtime: GameManager y GameHud; los checks previos siguen probando el clásico.
+- Clásico conserva victoria a 240 s, fases/mezcla/estadísticas originales y Jefa única a 180 s. Infinito mantiene la apertura y supera 240 s; el reloj es activo, congelado en pausa/elección. `GameState.Abandoned=4` se añade al final: reiniciar/volver al menú/cerrar una sesión activa emite abandono una vez; salir después de derrota/victoria conserva ese cierre. No hay puntaje ni récords todavía.
+- En infinito, tramo 1 a 240 s, 2 a 360 s, etc.: vida nueva ×(1+0,20c), velocidad ×min(1+0,02c;1,30), intervalo final 0,57 / min(1+0,08c;2) / Quilombo, piso 0,20 s. **Decisión de balance de esta etapa:** el plan no cuantificaba el crecimiento del cupo; se usa ×(1+0,08c), editable mediante `pressurePerSegment`, luego Quilombo y techo 150 comunes. Quilombo sigue siendo `1 + Current/100 + bonusUmbral`, compuesto exactamente una vez. Antes de 240 s se conservan las fases vigentes. Son curvas iniciales, no balance humano aceptado.
+- Jefa a 180/420/660/900… s. El director consume cada ventana incluso con la anterior viva: no acumula deuda, no duplica jefes y no crea élites. Si QA salta ventanas, sólo considera la última cruzada. Enemigos activos conservan vida/velocidad y posición al cambiar de tramo. Spawn calcula desde los campos base del prefab, sin modificarlos: bonus de vida y factores de movimiento son runtime y se limpian en reutilización. Vida máxima redondeada hacia arriba con tolerancia de 0,0001 para ruido float y saturación en int.MaxValue; daño de contacto/ataques y XP base no cambian. El perro también escala la longitud visible de su embestida. Configuración síncrona antes de asignar blancos y antes del próximo paso físico; no se cambia orden de ejecución del proyecto.
+- HUD infinito muestra tiempo ascendente, Apertura/Tramo y el próximo evento entre tramo/Jefa; si la Jefa vive, lo informa. No muestra meta 04:00 ni rojo de últimos treinta segundos. Conserva barra de vida de jefe, equipo, pasivas y carga de Festejo. Se amplió cuatro píxeles la caja de texto de la Jefa al detectar recorte a 1024×768, conservando la fuente. Los POIs siguen de un uso por partida y advierten que Quilombo aumenta presión; comunicar puntos corresponderá a etapa 6, cuando existan.
+
+**Presupuestos y política de objetos:** el único ObjectPool de Main comparte **256 gemas y 256 proyectiles activos**, editables en cada perfil y aplicados también al clásico. Los proyectiles de jugador, orbitales, piedras del Gomero, explosiones y sus visuales comparten el segundo cupo. Al saturarlo se omiten nuevas emisiones sin retirar las existentes; arma/ráfaga/consumo de sinergia conservan su reloj, y los orbitales faltantes pueden crearse cuando vuelve a haber sitio. Todos los llamadores runtime manejan el rechazo. Los impactos/avisos existentes pertenecen a actores y conservan un visual por actor/ataque y su duración; no se añade un emisor libre de VFX. Jefa mantiene un aviso, cancelado al morir/desactivar. No se despawnean comunes vivos para hacer espacio ni se emite muerte/XP al devolverlos.
+
+Cuando hay 256 gemas, cada drop nuevo agrega **todo** su valor a la gema activa más cercana al lugar de muerte, incluso si queda lejos del jugador. No hay caducidad ni descarte de XP; recoger esa gema entrega el acumulado una vez. `ExperienceGem.experienceValue` pasa de int a long **no serializado** y `ExperienceSystem` conserva la API int añadiendo una entrada long. CombatFeaturesCheck consulta el valor público long, conservando su aserción de XP exacta. El pool registra activos/picos/instancias creadas/drops agrupados/tiros omitidos por enable/disable, incluso si se desactiva un objeto por fuera de Return. F3 amplía el diagnóstico existente, oculto inicialmente en Editor/Development Build; también muestra pico de frame y memoria asignada. El pool retiene el pico por prefab de un catálogo finito; estos cupos no son un límite de memoria en MiB ni una garantía de 60 FPS.
+
+**Archivos relevantes**, relativos a la raíz Unity:
+
+| Archivos | Responsabilidad |
+| --- | --- |
+| `Assets/_Game/Scripts/Player/RunRules.cs` y `Resources/RunRules/` | Definiciones editables, modo seleccionado y configuración inmutable/reglas de tramos. |
+| `Scripts/Player/{GameManager,MenuScreen,GameHud}.cs` dentro de `Assets/_Game/` | Selección, reloj sin plazo, abandono, HUD y navegación. |
+| `Assets/_Game/Scripts/Enemy/{WaveDirector,SpawnManager,EnemyMovement,MosquitoChase,EnemyCharge,EnemyRanged}.cs`, `Scripts/Combat/Health.cs` | Calendario/cupos y escala desde base por aparición, limpieza de reutilización. |
+| `Assets/_Game/Scripts/Combat/{ObjectPool,PooledObject}.cs`, `Scripts/Enemy/ExperienceDrop.cs`, `Scripts/Player/{ExperienceGem,ExperienceSystem,WeaponController,PerformanceOverlay,RiskZone}.cs` | XP agrupada, presupuesto compartido, rechazo seguro, picos y advertencia de presión. |
+| `Assets/_Game/Editor/EndlessCheck.cs` y meta; `CombatFeaturesCheck.cs` | Check nuevo y adaptación compatible de la lectura de XP. |
+
+**Verificación realmente ejecutada:** baseline CombatFeaturesCheck sobre copia nueva del estado recibido, salida 0 (61,89 s incluyendo importación). Candidato en copia independiente, Unity 6000.3.23f1/macOS 26.5.2/Apple M3/8 GiB/Metal, con gráficos. Runtime y Editor compilaron. Diez procesos nuevos aprobados:
+
+| Entrada real | Salida | Segundos |
+| --- | ---: | ---: |
+| `EndlessCheck.RunBatch` | 0 | 39.84 |
+| `EvolutionCheck.RunBatch` | 0 | 20.67 |
+| `SynergyCheck.RunBatch` | 0 | 22.17 |
+| `PassiveSelectionCheck.RunBatch` | 0 | 23.39 |
+| `BuildStateCheck.RunBatch` | 0 | 12.08 |
+| `CharactersCheck.RunBatch` | 0 | 19.26 |
+| `CombatFeaturesCheck.RunBatch` | 0 | 17.58 |
+| `BallCheck.RunBatch` | 0 | 14.68 |
+| `PitchCheck.RunBatch` | 0 | 34.02 |
+| `UiRedesignCheck.RunBatch` | 0 | 68.19 |
+
+EndlessCheck verifica 239,9/240/240,1; fronteras 240/360/1800; composición real de Quilombo; cupo de 150 comunes más una Jefa; omisión sin deuda y logro de jefe; enemigos activos intactos; doce ciclos por cada uno de los seis prefabs; despawn sin XP; 6.000 drops de 33.000 XP conservados y cobrados una vez; rechazo/reutilización/doble devolución de proyectiles; teclado/ambos modos, pausa con varias elecciones, muerte, reinicio, abandono y cuatro resoluciones. Capturas de selector/HUD/pausa en 1280×720, 1024×768, 1920×1080 y 2560×1080; informe final de layout vacío. Se inspeccionaron selector y HUD a 1024×768, además de la build nativa. Los checks anteriores mantienen física, niveles, sinergias/evoluciones y regresiones de ambos personajes; Pitch incluye seis órdenes de visita y dos resistencias físicas de seis segundos.
+
+**Soak acelerado:** 1.800,726 segundos de simulación activa, 7.406 frames renderizados, 17,14 s de pared, 123 elecciones resueltas; tramo final 14. `Time.captureDeltaTime=1/30`, timeScale=8, física automática con su paso fijo habitual, sin F9. Jugador quieto con vida 1.000.000, cuatro armas y XP controlada cada 15 s activos; el resto del combate/spawn/pool/colisiones/ataques corre normalmente. Pico de 18 enemigos, 256 gemas y 19 proyectiles, 314 instancias creadas; no excedió cupos ni cerró por victoria. El cupo extremo 151 se prueba aparte: este soak no sostuvo esa densidad. CSV por minuto conserva objetos/memoria; pool final estable en 314. Memoria administrada antes/después de colección final sólo para diagnóstico: 769.966.080/745.095.168 bytes del proceso Editor (incluye fixtures y herramientas). No se usa esa cifra como memoria de player ni se afirma ausencia total de fugas. **No es supervivencia humana, 30 minutos reales ni medición de FPS.**
+
+**Evidencia e integridad:** `TestResults/BuildsEInfinito/Etapa5-20261104/` (local, ignorado): HEAD/status/diff/hashes iniciales, baseline, cinco intentos conservados, runner, resultados de diez suites, logs, capturas/layout, soak/retención, scripts y copia separada para build, métricas de player y controles SHA-256. `stage5-existing-scripts.diff` separa esta etapa de cambios previos. Los 613 archivos Assets/Packages importados coinciden entre original y copia de tests (sin ocho .gitkeep); 325 GUIDs meta únicos. Ninguna escena, prefab, asset previo, meta previo, arte, paquete, ProjectSettings o Assets exterior cambió respecto del árbol recibido. Sólo se agregaron dos perfiles, carpeta, script y check con cinco metas. `git diff --check` aprobado. Unity nunca abrió el original.
+
+Se conserva una excepción conocida de `UnityEditor.Search.SearchDatabase` por proceso, también presente en el baseline; sin errores C#/gameplay/asserts en resultados finales. Intentos 1–3 ajustaron sincronización física y entrega de teclado del fixture al patrón existente; intento 4 conserva un clic sintético IMGUI que no se entregó en batchmode (se retiró esa afirmación del check automatizado y se probó mouse nativo después). Intento 5 completó el primer soak y detectó layout: vida 10.000 usada por QA recortada en HUD normal y altura insuficiente de la Jefa. El fixture de capturas conserva ahora vida normal y usa invulnerabilidad temporal; la caja de la Jefa ganó altura sin achicar texto. No se quitaron aserciones para aprobar.
+
+**Reproducción segura:** copiar Assets, Packages y ProjectSettings a un directorio vacío. Editor 6000.3.23f1, con gráficos, sin `-nographics` ni `-quit`; cada entrada cierra el proceso. No ejecutar Setup/Apply/Generate ni usar una sesión con trabajo sin guardar. El check cambia su propia sesión, preferencias de Editor y configuración temporal de QA; no escribe assets ni marcas.
+
+```sh
+UNITY_BIN=/Applications/Unity/Hub/Editor/6000.3.23f1/Unity.app/Contents/MacOS/Unity
+QA_PROJECT=/ruta/absoluta/copia-unity
+QA_OUTPUT=/ruta/absoluta/resultados
+mkdir -p "$QA_OUTPUT/endless"
+CONURBANO_ENDLESS_OUTPUT="$QA_OUTPUT/endless" CONURBANO_ENDLESS_SOAK=1 "$UNITY_BIN" -batchmode -projectPath "$QA_PROJECT" -executeMethod EndlessCheck.RunBatch -logFile "$QA_OUTPUT/endless.log"
+```
+
+`run_checks.py` y `results.json` registran las diez entradas/variables/argv/rutas exactas; `candidate-project-path.txt` identifica la copia. CONURBANO_ART_SAMPLE debe estar ausente para revisar todas las cartas normales. F9 continúa siendo sólo aceleración del reloj de QA: no sustituye este soak. El marcado permanente de práctica pertenece a etapa 6; todavía no hay marcas persistidas.
+
+**Cómo probar jugando:** abrir Menu, Jugar, elegir personaje y modo con mouse o Tab/flechas/Enter y pulsar A la plaza. Clásico: La Jefa a 03:00 y victoria a 04:00 aunque siga viva. Infinito: superar 04:00, observar Tramo 1; 06:00 inicia Tramo 2. Los encuentros siguientes de Jefa son a 07:00 y 11:00; si la anterior vive se omiten. Completar lugares para aumentar presión, sin recompensas repetidas al cruzar tramos. Esc y elecciones deben congelar reloj/ataques; volver con una cola pendiente debe mantenerla. Reiniciar con R desde pausa/fin mantiene modo/personaje y limpia build, POIs y logro del jefe; M vuelve al menú para cambiar modo. F3 muestra cupos/picos. Las gemas agrupadas pueden concentrar varias subidas al recogerlas. El check aislado fuerza fronteras y cupos sin editar assets; no representa progresión natural ni balance aceptado.
+
+**Límites de alcance:** etapas 6–9 siguen como diseño: sin puntaje, resumen inmutable, récords ni servicios online. Balance humano, supervivencia natural prolongada y Windows siguen pendientes; sólo está instalado MacStandaloneSupport. La búsqueda de blancos conserva OverlapCircleAll: se midió GC agregado, pero no se identificó esa consulta como cuello de botella ni se hizo una optimización sin evidencia. No se actualizaron Unity/paquetes ni se migró IMGUI.
+
+
+**Build y ejecución real fuera del Editor:** `Builds/Mac/Etapa5-20261104-QA/ConurbanoInfinitoQA.app`, macOS **universal x86_64+arm64 / Mono / Development**, Menu→Main. BuildPipeline.BuildPlayer devolvió **Succeeded**, cero errores y un warning; tamaño del reporte 333.406.026 bytes, duración interna 112,99 s / proceso 152,40 s. Se usó otra copia de fuentes, con dos scripts de QA temporales exclusivos de esa copia: una entrada de build y una sonda de ejecución, inactiva sin `-stage5-probe`. No se agregan al gameplay ni al repo. La build es de QA local, sin notarización ni validación Windows. El warning fue token vacío para símbolos de Unity Cloud Diagnostics; el postproceso automático informó que no podía subir símbolos por falta de credenciales. No se incorporaron credenciales ni se publicó nada.
+
+Con la Mac desbloqueada, se comprobó por UI nativa **mouse** en Jugar, personaje, Infinito, A la plaza y Volver al menú; la selección amarilla y el HUD Infinito/Apertura fueron observados. Esc pausó y R conservó La Piba/modo al reiniciar. Se cerró la aplicación. Este recorrido breve no representa una partida humana completa. El intento de acceso previo al desbloqueo quedó registrado; la primera sonda de rendimiento tuvo visibilidad no confirmada, por eso se repitió con ventana visible y combate observado.
+
+Sonda visible final (`standalone-visible/`), Apple M3 / 8 GiB / macOS 26.5.2 / Metal / ventana 1280×720 / VSync=1 / targetFrameRate=-1, **timeScale=1 y sin captureDeltaTime/F9**:
+
+| Métrica | Resultado medido |
+| --- | ---: |
+| Ventana de medición | 60,014 s / 3.591 frames |
+| FPS promedio | 59,84 |
+| Frame p50 / p95 / p99 | 16,66 / 17,66 / 17,80 ms |
+| Pico de frame | 99,00 ms |
+| Pico desde preparación: enemigos / gemas / proyectiles | 151 / 256 / 28 |
+| Enemigos en muestras de un segundo | 30–66 |
+| Pool creado al final | 459, estable en muestras finales |
+| GC Allocated In Frame, media / máximo | 7.754 / 77.030 bytes por frame |
+| GC asignado total en ventana | 27.845.647 bytes |
+| Memoria asignada Unity, inicio / fin | 103.937.063 / 104.544.035 bytes |
+| Memoria administrada inicio / fin / tras colección diagnóstica final | 5.373.952 / 6.213.632 / 5.640.192 bytes |
+| Reloj activo observado | 1804,991 → 1865,011 s |
+
+**Límite del escenario:** se prepararon 150 comunes y un jefe, Quilombo 100, build de cuatro armas mejoradas, vida elevada, jugador quieto y elección de cartas desactivada sólo en la sonda. Tras preparar la densidad, spawn/daño/física/efectos corren a velocidad real. El combate reduce esa población: **no es un minuto con 150 comunes constantes**, ni una prueba humana o de 30 minutos reales. Los 59,84 FPS de promedio y el pico de 99 ms no certifican 60 FPS sostenidos. No se atribuyó el GC a OverlapCircleAll sin un perfil de llamadas; no se cambió la búsqueda a ciegas.
+
+Al cerrar el player apareció `GarbageCollector disposing of ComputeBuffer`. Se lanzó y cerró la **demo Mac ya existente de 2026-10-16**, también Unity 6000.3.23f1: reproduce el mismo aviso (`old-demo-player.log`), por lo que el aviso antecede a esta etapa. Su causa no se resolvió aquí. Se conservan además los diagnósticos de memoria al cierre de Development Build, sin presentarlos como prueba de ausencia de fugas. No hubo excepciones de gameplay durante las dos sondas. La prueba antigua sólo establece el antecedente de ese aviso, no un baseline equivalente de rendimiento.
+
+Para repetir la build instrumentada, copiar únicamente `Stage5BuildQa.cs` a Editor y `Stage5RuntimeProbe.cs` a Scripts **en una copia aislada**, desde la evidencia local; ejecutar `Stage5BuildQa.BuildMac` con `CONURBANO_STAGE5_APP` apuntando a un destino nuevo fuera de Assets. Los argv y salidas reales están en `build-mac-result.json` y `standalone-visible/result.json`; el ejecutable se invoca con `-stage5-probe /ruta/resultados`, se mantiene la ventana visible y sale solo tras la medición. Los scripts completos quedan conservados para revisar/reproducir la preparación. No distribuir esa sonda como build de entrega. Sin el flag, la app abre Menu y no aplica preparación de QA.

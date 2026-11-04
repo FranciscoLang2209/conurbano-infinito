@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 public sealed class GameManager : MonoBehaviour
 {
     public const float DefaultDurationSeconds = 240f;
-    public enum GameState { Playing, Paused, Defeat, Victory }
+    public enum GameState { Playing, Paused, Defeat, Victory, Abandoned }
 
     [SerializeField] private Health playerHealth;
     [SerializeField] private WeaponController playerWeapon;
@@ -17,7 +17,10 @@ public sealed class GameManager : MonoBehaviour
     public GameState State { get; private set; } = GameState.Playing;
     public event Action<GameState> StateChanged;
     public float ElapsedSeconds { get; private set; }
-    public float DurationSeconds => durationSeconds;
+    // Infinite has no deadline; callers must gate finite goals with HasTimeLimit.
+    public float DurationSeconds => HasTimeLimit ? durationSeconds : 0f;
+    public RunConfiguration Configuration { get; private set; }
+    public bool HasTimeLimit => Configuration == null || !Configuration.IsEndless;
     public Health BossHealth => waveDirector != null ? waveDirector.ActiveBoss : null;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     public bool IsFastForwarding { get; private set; }
@@ -31,16 +34,21 @@ public sealed class GameManager : MonoBehaviour
     private void Awake()
     {
         Time.timeScale = 1f;
+        Configuration = RunRules.Selected.CreateConfiguration();
         upgradeSelection = GetComponent<UpgradeSelection>();
         if (playerHealth == null || playerWeapon == null || spawnManager == null || waveDirector == null)
         {
             Debug.LogError("GameManager requiere jugador, SpawnManager y WaveDirector.", this);
             enabled = false;
+            return;
         }
+        waveDirector.Configure(Configuration);
+        spawnManager.GetComponent<ObjectPool>().Configure(Configuration);
     }
 
     private void OnEnable()
     {
+        if (waveDirector != null) waveDirector.BossDefeated += OnBossDefeated;
         if (playerHealth != null)
         {
             playerHealth.Died += OnPlayerDied;
@@ -49,12 +57,18 @@ public sealed class GameManager : MonoBehaviour
 
     private void OnDisable()
     {
+        if (waveDirector != null) waveDirector.BossDefeated -= OnBossDefeated;
         if (playerHealth != null)
         {
             playerHealth.Died -= OnPlayerDied;
         }
 
         Time.timeScale = 1f;
+    }
+
+    private void OnBossDefeated()
+    {
+        if (State == GameState.Playing && !playerHealth.IsDead) playerWeapon.RegisterBossDefeated();
     }
 
     private void Update()
@@ -107,9 +121,10 @@ public sealed class GameManager : MonoBehaviour
         }
 
         float clockMultiplier = IsFastForwarding ? 10f : 1f;
-        ElapsedSeconds = Mathf.Min(durationSeconds, ElapsedSeconds + Time.deltaTime * clockMultiplier);
-        if (ElapsedSeconds >= durationSeconds)
+        ElapsedSeconds += Time.deltaTime * clockMultiplier;
+        if (HasTimeLimit && ElapsedSeconds >= durationSeconds)
         {
+            ElapsedSeconds = durationSeconds;
             focusedAction = 0;
             State = GameState.Victory;
             StateChanged?.Invoke(State);
@@ -145,14 +160,26 @@ public sealed class GameManager : MonoBehaviour
 
     public void RestartGame()
     {
+        AbandonGame();
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     public void ReturnToMenu()
     {
+        AbandonGame();
         Time.timeScale = 1f;
         SceneManager.LoadScene("Menu");
+    }
+
+    private void OnApplicationQuit() => AbandonGame();
+
+    private void AbandonGame()
+    {
+        if (State != GameState.Playing && State != GameState.Paused) return;
+        State = GameState.Abandoned;
+        StateChanged?.Invoke(State);
+        StopGame();
     }
 
     private void OnPlayerDied()
@@ -195,16 +222,20 @@ public sealed class GameManager : MonoBehaviour
         Color accent = victory ? GameUi.Gold : paused ? GameUi.Cyan : GameUi.Red;
         GameUi.Sign(panel, accent);
         GameUi.Surface(new Rect(panel.x + 8, panel.y + 8, 368, 436), "enamel");
-        GameUi.Icon("plaza", new Rect(panel.x + 24, panel.y + 26, 336, 224));
-        GameUi.Icon("mate", new Rect(panel.x + 30, panel.y + 272, 32, 32));
-        GameUi.Text(new Rect(panel.x + 74, panel.y + 271, 276, 32),
-            paused ? "La plaza sigue ahí." : victory ? "El barrio te saluda." : "Mañana será otro día.",
-            21, GameUi.Cream);
-        int seconds = Mathf.FloorToInt(ElapsedSeconds);
-        GameUi.Text(new Rect(panel.x + 32, panel.y + 304, 304, 30), "Tiempo de supervivencia", 18, GameUi.Cream);
-        GameUi.Text(new Rect(panel.x + 30, panel.y + 334, 304, 68),
-            $"{seconds / 60:00}:{seconds % 60:00}", 52, GameUi.Cream);
-        GameUi.Text(new Rect(panel.x + 32, panel.y + 405, 304, 30), "Conurbano Infinito", 17, GameUi.Muted);
+        if (paused) DrawBuildSummary(new Rect(panel.x + 24, panel.y + 20, 336, 412));
+        else
+        {
+            GameUi.Icon("plaza", new Rect(panel.x + 24, panel.y + 26, 336, 224));
+            GameUi.Icon("mate", new Rect(panel.x + 30, panel.y + 272, 32, 32));
+            GameUi.Text(new Rect(panel.x + 74, panel.y + 271, 276, 32),
+                paused ? "La plaza sigue ahí." : victory ? "El barrio te saluda." : "Mañana será otro día.",
+                21, GameUi.Cream);
+            int seconds = Mathf.FloorToInt(ElapsedSeconds);
+            GameUi.Text(new Rect(panel.x + 32, panel.y + 304, 304, 30), "Tiempo de supervivencia", 18, GameUi.Cream);
+            GameUi.Text(new Rect(panel.x + 30, panel.y + 334, 304, 68),
+                $"{seconds / 60:00}:{seconds % 60:00}", 52, GameUi.Cream);
+            GameUi.Text(new Rect(panel.x + 32, panel.y + 405, 304, 30), "Conurbano Infinito", 17, GameUi.Muted);
+        }
 
         float x = panel.x + 412;
         GameUi.Text(new Rect(x, panel.y + 28, 444, 25),
@@ -230,5 +261,28 @@ public sealed class GameManager : MonoBehaviour
         }
         GameUi.Text(new Rect(x, panel.y + 405, 438, 23), "Flechas / Tab + Enter · Mouse", 16, GameUi.Petrol);
         GameUi.End(previous);
+    }
+
+    private void DrawBuildSummary(Rect area)
+    {
+        GameUi.Text(new Rect(area.x, area.y, area.width, 26), "Afinidad del personaje", 20, GameUi.Gold);
+        GameUi.Text(new Rect(area.x, area.y + 30, area.width, 58), playerWeapon.AffinityDescription,
+            18, GameUi.Cream, TextAnchor.UpperLeft, true);
+        float y = area.y + 94;
+        foreach (SynergyData data in SynergyData.All)
+        {
+            bool active = false;
+            foreach (SynergyData owned in playerWeapon.ActiveSynergies)
+                if (owned == data) active = true;
+            GameUi.Text(new Rect(area.x, y, area.width, 26), data.DisplayName + (active ? " · Activa" : " · Pendiente"),
+                18, active ? GameUi.Gold : GameUi.Muted);
+            GameUi.Text(new Rect(area.x, y + 27, area.width, 24), data.Requirements, 16, GameUi.Cyan);
+            string effect = data.Description;
+            if (data.Effect == SynergyEffect.FestejoDelBarrio && playerWeapon.FestejoReady)
+                effect = "Carga lista: próximo Petardo +25% de radio.";
+            GameUi.Text(new Rect(area.x, y + 52, area.width, 50), effect, 16,
+                GameUi.Cream, TextAnchor.UpperLeft, true);
+            y += 104;
+        }
     }
 }

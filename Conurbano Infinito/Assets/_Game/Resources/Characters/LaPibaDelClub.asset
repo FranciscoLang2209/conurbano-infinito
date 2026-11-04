@@ -21,3 +21,4 @@ MonoBehaviour:
   firstWeaponUpgrade: {fileID: 11400000, guid: 3a3e835b1452a4415936fada32033c07, type: 2}
   portrait: {fileID: 21300000, guid: cb71b1f5d9b304f4e9002cdaf36aa05a, type: 3}
   animatorController: {fileID: 22100000, guid: cf2ccabe57d924f168a6f9419b66b2a8, type: 2}
+  affinity: 2

@@ -23,6 +23,12 @@ public sealed class Projectile : MonoBehaviour
     private WeaponPattern visualPattern;
     private Flight flight;
     private Transform owner;
+    private WeaponController sourceController;
+    private WeaponData sourceWeapon;
+    private Health firstRicochetTarget;
+    private uint firstRicochetLife;
+    private int ricochetHits;
+    private bool allowRicochetReturn, aimingAtFirst;
     private float damage;
     private int remainingHits;
     private float maximumDistanceSquared;
@@ -78,6 +84,11 @@ public sealed class Projectile : MonoBehaviour
     {
         initialized = false;
         owner = null;
+        sourceController = null;
+        sourceWeapon = null;
+        firstRicochetTarget = null;
+        ricochetHits = 0;
+        allowRicochetReturn = aimingAtFirst = false;
         returning = false;
         exploding = false;
         blastRadius = 0f;
@@ -127,6 +138,9 @@ public sealed class Projectile : MonoBehaviour
 
     public void Initialize(Vector2 direction, float projectileDamage, float projectileSpeed, int pierce, float range)
     {
+        firstRicochetTarget = null;
+        ricochetHits = 0;
+        allowRicochetReturn = aimingAtFirst = false;
         flight = visualPattern == WeaponPattern.Ricochet ? Flight.Ricochet : Flight.Straight;
         damage = projectileDamage;
         remainingHits = pierce + 1;
@@ -137,6 +151,16 @@ public sealed class Projectile : MonoBehaviour
         if (visualPattern == WeaponPattern.Straight) RotateAlongVelocity();
         initialized = true;
     }
+
+    public void SetSource(WeaponController controller, WeaponData weapon)
+    {
+        sourceController = controller;
+        sourceWeapon = weapon;
+    }
+
+    public void SetRicochetReturn(bool allowed) => allowRicochetReturn = allowed;
+
+    public void SetEvolutionTint() => visualRenderer.color = Color.Lerp(visualRenderer.color, new Color(1f, 0.85f, 0.3f), 0.3f);
 
     public void InitializeExplosive(Vector2 destination, float projectileDamage,
         float projectileSpeed, float radius)
@@ -305,7 +329,9 @@ public sealed class Projectile : MonoBehaviour
             return;
         }
 
-        if (remainingHits <= 0 || !hitTargets.Add(target))
+        bool returnedHit = flight == Flight.Ricochet && aimingAtFirst && target == firstRicochetTarget &&
+            target.LifeId == firstRicochetLife;
+        if (remainingHits <= 0 || !returnedHit && !hitTargets.Add(target))
         {
             return;
         }
@@ -315,6 +341,17 @@ public sealed class Projectile : MonoBehaviour
             return;
         }
 
+        if (flight == Flight.Ricochet)
+        {
+            if (ricochetHits++ == 0)
+            {
+                firstRicochetTarget = target;
+                firstRicochetLife = target.LifeId;
+            }
+            if (returnedHit) aimingAtFirst = false;
+        }
+
+        if (sourceController != null) sourceController.RegisterDirectHit(sourceWeapon);
         Hit?.Invoke();
 
         if (target.IsDead && flight != Flight.Ricochet) hitTargets.Remove(target);
@@ -345,6 +382,15 @@ public sealed class Projectile : MonoBehaviour
             nearest = distance;
         }
         areaTargets.Clear();
+        if (next == null && allowRicochetReturn && ricochetHits >= 2 && firstRicochetTarget != null &&
+            firstRicochetTarget.gameObject.activeInHierarchy && !firstRicochetTarget.IsDead &&
+            firstRicochetTarget.LifeId == firstRicochetLife &&
+            ((Vector2)firstRicochetTarget.transform.position - body.position).sqrMagnitude <= maximumDistanceSquared)
+        {
+            next = firstRicochetTarget;
+            aimingAtFirst = true;
+            allowRicochetReturn = false;
+        }
         if (next == null) return false;
         Vector2 direction = (Vector2)next.transform.position - body.position;
         if (direction.sqrMagnitude > 0.0001f) body.linearVelocity = direction.normalized * speed;

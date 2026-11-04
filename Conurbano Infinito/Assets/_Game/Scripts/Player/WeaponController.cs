@@ -24,8 +24,34 @@ public sealed class WeaponController : MonoBehaviour
     public float FireInterval => weapon == null ? 0f : GetInterval(FindWeapon(weapon));
     public int EquippedWeaponCount => equipped.Count;
     public WeaponData GetEquippedWeapon(int index) => equipped[index].Data;
+    public UpgradeData GetEvolution(WeaponData data) => FindWeapon(data)?.Evolution;
+    public string GetWeaponDisplayName(WeaponData data) => GetEvolution(data)?.DisplayName ?? data.name;
+    public string GetWeaponIdentity(WeaponData data) => GetEvolution(data)?.StableId ?? data.StableId;
+    public bool HasDefeatedBoss => Build.BossDefeated;
     public IReadOnlyList<UpgradeData> SelectedPassives => Build.Passives;
     public int GetPassiveLevel(UpgradeData data) => Build.PassiveLevels.TryGetValue(data, out int level) ? level : 0;
+    public event System.Action<SynergyData> SynergyActivated;
+    public IReadOnlyList<SynergyData> ActiveSynergies => Build.Synergies.Active;
+    public bool FestejoReady => Build.Synergies.FestejoReady;
+    public string AffinityDescription => Build.Character != null ? Build.Character.AffinityDescription : "Sin afinidad adicional.";
+
+    private void RefreshSynergies() => Build.Synergies.Evaluate(Build, data => SynergyActivated?.Invoke(data));
+
+    internal void RegisterBossDefeated() => Build.BossDefeated = true;
+
+    public bool CanEvolve(UpgradeData recipe) => recipe != null && recipe.Effect == UpgradeEffect.EvolveWeapon &&
+        recipe.Evolution != EvolutionEffect.None && recipe.RequiredPassive != null && Build.BossDefeated &&
+        FindWeapon(recipe.TargetWeapon) is EquippedWeapon item && item.Evolution == null &&
+        item.Level == BuildRules.Current.MaximumWeaponLevel &&
+        GetPassiveLevel(recipe.RequiredPassive) == recipe.RequiredPassive.MaximumLevel;
+
+    public bool Evolve(UpgradeData recipe)
+    {
+        if (!CanEvolve(recipe)) return false;
+        // Replace this slot's identity; retain its immutable family definition and all session modifiers.
+        FindWeapon(recipe.TargetWeapon).Evolution = recipe;
+        return true;
+    }
 
     public bool CanUpgradePassive(UpgradeData data)
     {
@@ -44,6 +70,7 @@ public sealed class WeaponController : MonoBehaviour
         int level = GetPassiveLevel(data);
         if (level == 0) Build.Passives.Add(data);
         Build.PassiveLevels[data] = level + 1;
+        RefreshSynergies();
     }
 
     private void Awake()
@@ -51,7 +78,11 @@ public sealed class WeaponController : MonoBehaviour
         health = GetComponent<Health>();
         pool = FindFirstObjectByType<ObjectPool>();
         enemyLayerMask = LayerMask.GetMask("Enemy");
-        if (TryGetComponent<PlayerController>(out _)) weapon = CharacterData.Selected.StartingWeapon;
+        if (TryGetComponent<PlayerController>(out _))
+        {
+            Build.Character = CharacterData.Selected;
+            weapon = Build.Character.StartingWeapon;
+        }
         if (weapon == null || projectilePrefab == null || enemyLayerMask == 0 || pool == null)
         {
             Debug.LogError("WeaponController requiere arma, proyectil, capa Enemy y ObjectPool.", this);
@@ -66,6 +97,7 @@ public sealed class WeaponController : MonoBehaviour
     {
         foreach (EquippedWeapon item in equipped)
         {
+            item.PulseCount = 0;
             foreach (Projectile orbital in item.Orbitals)
             {
                 if (orbital != null)
@@ -90,6 +122,7 @@ public sealed class WeaponController : MonoBehaviour
         }
 
         equipped.Add(new EquippedWeapon { Data = data });
+        RefreshSynergies();
         return true;
     }
 
@@ -137,7 +170,11 @@ public sealed class WeaponController : MonoBehaviour
     internal void AdvanceWeaponLevel(WeaponData data)
     {
         EquippedWeapon item = FindWeapon(data);
-        if (item != null && item.Level < BuildRules.Current.MaximumWeaponLevel) item.Level++;
+        if (item != null && item.Level < BuildRules.Current.MaximumWeaponLevel)
+        {
+            item.Level++;
+            RefreshSynergies();
+        }
     }
 
     public void IncreaseWeaponDamage(WeaponData data, int amount)
@@ -200,18 +237,28 @@ public sealed class WeaponController : MonoBehaviour
 
     private void Update()
     {
-        if (Time.timeScale == 0f || health.IsDead)
+        if (health.IsDead)
+        {
+            foreach (EquippedWeapon item in equipped) item.PulseCount = 0;
+            return;
+        }
+        if (Time.timeScale == 0f)
         {
             return;
         }
 
         foreach (EquippedWeapon item in equipped)
         {
+            if (item.PulseCount > 0 && Time.time >= item.PulseTime)
+            {
+                FireSecondPulse(item);
+                item.PulseCount = 0;
+            }
             if (item.Data.Pattern == WeaponPattern.Orbiting)
             {
                 EnsureOrbitals(item);
             }
-            else if (Time.time >= item.NextAttackTime)
+            else if (item.PulseCount == 0 && Time.time >= item.NextAttackTime)
             {
                 Health target = FindNearestEnemy(item.Data.Range);
                 if (target != null)
@@ -226,23 +273,38 @@ public sealed class WeaponController : MonoBehaviour
     private void Fire(EquippedWeapon item, Health target)
     {
         WeaponData data = item.Data;
+        Build.Synergies.BeginAttack(data, out int extraProjectiles, out float radiusMultiplier);
         Vector2 offset = (Vector2)target.transform.position - (Vector2)transform.position;
         Vector2 direction = offset.sqrMagnitude > 0f ? offset.normalized : Vector2.right;
-        int count = BuildStatistics.ProjectileCount(Build, item);
+        int count = Mathf.Min(BuildStatistics.ProjectileCount(Build, item) + extraProjectiles,
+            BuildRules.Current.MaximumProjectileCount);
+
+        if (item.Evolution != null && item.Evolution.Evolution == EvolutionEffect.ThermosBurst)
+        {
+            item.PulseTime = Time.time + item.Evolution.PulseDelay;
+            item.PulseCount = Mathf.Min(BuildStatistics.ProjectileCount(Build, item),
+                BuildRules.Current.MaximumProjectileCount - count);
+            item.PulseDamage = GetDamage(item) * item.Evolution.SecondPulseDamage;
+            item.PulseSpeed = GetSpeed(item);
+            item.PulsePierce = BuildStatistics.Pierce(Build, item);
+            item.PulseDirection = direction;
+        }
 
         for (int i = 0; i < count; i++)
         {
             float angle = count == 1 ? 0f :
                 Mathf.Lerp(-data.SpreadDegrees / 2f, data.SpreadDegrees / 2f, i / (float)(count - 1));
             Vector2 shotDirection = Quaternion.Euler(0f, 0f, angle) * direction;
-            Projectile projectile = pool.Spawn(projectilePrefab.gameObject, transform.position,
-                Quaternion.identity).GetComponent<Projectile>();
+            GameObject spawned = pool.Spawn(projectilePrefab.gameObject, transform.position, Quaternion.identity);
+            if (spawned == null) continue;
+            Projectile projectile = spawned.GetComponent<Projectile>();
             projectile.SetAppearance(data.ProjectileSprite, data.ProjectileColor,
                 data.ProjectileScale, data.Pattern);
+            if (item.Evolution != null) projectile.SetEvolutionTint();
             if (data.Pattern == WeaponPattern.Explosive)
             {
                 projectile.InitializeExplosive(target.transform.position, GetDamage(item),
-                    GetSpeed(item), BuildStatistics.ExplosionRadius(Build, item));
+                    GetSpeed(item), BuildStatistics.ExplosionRadius(Build, item) * radiusMultiplier);
             }
             else if (data.Pattern == WeaponPattern.Returning)
             {
@@ -252,8 +314,28 @@ public sealed class WeaponController : MonoBehaviour
             else
             {
                 projectile.Initialize(shotDirection, GetDamage(item), GetSpeed(item),
-                    data.Pierce + item.RicochetBonus, data.Range);
+                    BuildStatistics.Pierce(Build, item), data.Range);
             }
+            projectile.SetSource(this, data);
+            projectile.SetRicochetReturn(item.Evolution != null && item.Evolution.Evolution == EvolutionEffect.BallReturn);
+        }
+    }
+
+    private void FireSecondPulse(EquippedWeapon item)
+    {
+        WeaponData data = item.Data;
+        for (int i = 0; i < item.PulseCount; i++)
+        {
+            float angle = item.PulseCount == 1 ? 0f : Mathf.Lerp(-data.SpreadDegrees / 2f,
+                data.SpreadDegrees / 2f, i / (float)(item.PulseCount - 1));
+            GameObject spawned = pool.Spawn(projectilePrefab.gameObject, transform.position, Quaternion.identity);
+            if (spawned == null) continue;
+            Projectile shot = spawned.GetComponent<Projectile>();
+            shot.SetAppearance(data.ProjectileSprite, data.ProjectileColor, data.ProjectileScale, data.Pattern);
+            shot.SetEvolutionTint();
+            shot.Initialize(Quaternion.Euler(0f, 0f, angle) * item.PulseDirection,
+                item.PulseDamage, item.PulseSpeed, item.PulsePierce, data.Range);
+            shot.SetSource(this, data);
         }
     }
 
@@ -268,8 +350,9 @@ public sealed class WeaponController : MonoBehaviour
 
         while (item.Orbitals.Count < count)
         {
-            Projectile orbital = pool.Spawn(projectilePrefab.gameObject, transform.position,
-                Quaternion.identity).GetComponent<Projectile>();
+            GameObject spawned = pool.Spawn(projectilePrefab.gameObject, transform.position, Quaternion.identity);
+            if (spawned == null) break;
+            Projectile orbital = spawned.GetComponent<Projectile>();
             orbital.SetAppearance(item.Data.ProjectileSprite, item.Data.ProjectileColor,
                 item.Data.ProjectileScale, item.Data.Pattern);
             item.Orbitals.Add(orbital);
@@ -303,7 +386,13 @@ public sealed class WeaponController : MonoBehaviour
 
     private float GetDamage(EquippedWeapon item) => item == null ? 0f : BuildStatistics.Damage(Build, item);
     private float GetInterval(EquippedWeapon item) => item == null ? 0f : BuildStatistics.Interval(Build, item);
-    private float GetSpeed(EquippedWeapon item) => BuildStatistics.ProjectileSpeed(item);
+    private float GetSpeed(EquippedWeapon item) => BuildStatistics.ProjectileSpeed(Build, item);
+
+    internal void RegisterDirectHit(WeaponData source)
+    {
+        if (isActiveAndEnabled && health != null && !health.IsDead && Time.timeScale > 0f)
+            Build.Synergies.DirectHit(source);
+    }
 
     private EquippedWeapon FindWeapon(WeaponData data)
     {

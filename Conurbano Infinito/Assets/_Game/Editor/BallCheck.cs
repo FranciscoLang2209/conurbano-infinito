@@ -64,7 +64,7 @@ public static class BallCheck
             Require(errors == 0, "Gameplay Console errors: " + errors);
             EditorApplication.ExitPlaymode();
             await Until(() => !EditorApplication.isPlaying);
-            Debug.Log("BALL_CHECK_PASS characters=2 base=3-targets upgraded=6-targets nearest=True unique=True layers=True range=True pool=ball-straight-ball physics=True pause=True cards=4 weaponLevel=8 damage=3 cadence=1 bounces=3 HUD=True knownEditorSearchErrors=" + editorSearchErrors);
+            Debug.Log("BALL_CHECK_PASS characters=2 base=3-or-4-targets upgraded=6-or-7-targets affinity=Piba+1 nearest=True unique=True layers=True range=True pool=ball-straight-ball physics=True pause=True cards=4 weaponLevel=8 damage=3 cadence=1 bounces=3 HUD=True knownEditorSearchErrors=" + editorSearchErrors);
             EditorApplication.Exit(0);
         }
         catch (Exception error)
@@ -110,9 +110,10 @@ public static class BallCheck
         var crowd = Enumerable.Range(0, 7).Select(i => Target(start + Vector2.right * (i + 1))).ToArray();
         Physics2D.SyncTransforms();
         Projectile shot = Fire(controller, crowd[0]);
-        for (int i = 0; i < 6; i++) ContactAt(shot, crowd[i]);
-        Require(!shot.gameObject.activeSelf && crowd.Take(6).All(t => t.CurrentHealth == 15) && crowd[6].CurrentHealth == 20,
-            "Damage/bounce upgrades do not produce six unique impacts.");
+        int impacts = 6 + CharacterData.Selected.RicochetBonus;
+        for (int i = 0; i < impacts; i++) ContactAt(shot, crowd[i]);
+        Require(!shot.gameObject.activeSelf && crowd.Take(impacts).All(t => t.CurrentHealth == 15) && crowd.Skip(impacts).All(t => t.CurrentHealth == 20),
+            "Damage/bounce upgrades do not produce the expected unique impacts (including character affinity).");
         ClearTargets();
         foreach (string name in new[] { "Termo Balístico", "Aerosol", "Fernets Orbitales", "Chancleta Teledirigida" })
         {
@@ -208,7 +209,7 @@ public static class BallCheck
         await Until(() => group[0].CurrentHealth == 18);
         await Capture("pelota-en-juego-1280x720");
         await Until(() => !shot.gameObject.activeSelf);
-        Require(group.Take(3).All(t => t.CurrentHealth == 18) && group[3].CurrentHealth == 20, "Real physics did not chain three targets.");
+        Require(group.All(t => t.CurrentHealth == 18), "La Piba affinity must chain four targets with real physics.");
         var selection = Object.FindFirstObjectByType<UpgradeSelection>();
         WithDeck(cards.Skip(1).ToArray(), () => {
             var xp = controller.GetComponent<ExperienceSystem>();
@@ -220,7 +221,7 @@ public static class BallCheck
         Require(selection.GetWeaponLevel(ball) == 2, "Bounce upgrade omitted from HUD rank.");
         await Capture("hud-pelota-n2-1280x720");
         ClearTargets();
-        Debug.Log("BALL_PHYSICS_PASS actual-collisions=3 pause=True screenshots=gameplay,cards,HUD");
+        Debug.Log("BALL_PHYSICS_PASS actual-collisions=4 affinity=True pause=True screenshots=gameplay,cards,HUD");
     }
 
     private static async Task FreshMain(CharacterData character)

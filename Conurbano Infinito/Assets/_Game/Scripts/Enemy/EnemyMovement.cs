@@ -9,6 +9,8 @@ public sealed class EnemyMovement : MonoBehaviour
     [SerializeField, Min(0f)] private float zigzagStrength = 0.6f;
     [SerializeField, Min(0f)] private float zigzagFrequency = 3f;
 
+    internal float SpawnSpeedFactor { get; set; } = 1f;
+
     private Rigidbody2D body;
     private Health targetHealth;
     private static Sprite placeholderSprite;
@@ -36,6 +38,8 @@ public sealed class EnemyMovement : MonoBehaviour
         targetHealth = target != null ? target.GetComponent<Health>() : null;
     }
 
+    private void OnDisable() => SpawnSpeedFactor = 1f;
+
     private void FixedUpdate()
     {
         if (target == null || (targetHealth != null && targetHealth.IsDead)) return;
@@ -48,6 +52,6 @@ public sealed class EnemyMovement : MonoBehaviour
             direction = (direction + new Vector2(-direction.y, direction.x) *
                 Mathf.Sin(Time.time * zigzagFrequency) * zigzagStrength).normalized;
         }
-        body.MovePosition(body.position + direction * movementSpeed * Time.fixedDeltaTime);
+        body.MovePosition(body.position + direction * movementSpeed * SpawnSpeedFactor * Time.fixedDeltaTime);
     }
 }

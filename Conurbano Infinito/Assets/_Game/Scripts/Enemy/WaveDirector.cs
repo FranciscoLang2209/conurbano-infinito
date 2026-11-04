@@ -15,8 +15,38 @@ public sealed class WaveDirector : MonoBehaviour
     private bool bossSpawned;
     private float quilomboThresholdBonus;
     private bool elitesEnabled;
+    private RunConfiguration configuration;
+    private int lastBossSlot = -1;
+    public int EndlessSegment { get; private set; }
+    public float NextBossSeconds { get; private set; } = 180f;
+    public float CurrentSpawnInterval { get; private set; }
+    public int CurrentCommonLimit { get; private set; }
+    public int PeakEnemyCount { get; private set; }
+
+    public void Configure(RunConfiguration rules)
+    {
+        configuration = rules;
+        NextBossSeconds = waves.BossSpawnSeconds;
+    }
 
     public Health ActiveBoss { get; private set; }
+    public event System.Action BossDefeated;
+
+    private void OnEnable()
+    {
+        if (ActiveBoss != null && !ActiveBoss.IsDead) ActiveBoss.Died += OnBossDied;
+    }
+
+    private void OnDisable()
+    {
+        if (ActiveBoss != null) ActiveBoss.Died -= OnBossDied;
+    }
+
+    private void OnBossDied()
+    {
+        ActiveBoss.Died -= OnBossDied;
+        BossDefeated?.Invoke();
+    }
     public int PhaseNumber => currentPhase + 1;
     public int PhaseCount => waves.Phases.Length;
     public string PhaseTitle => currentPhase < 0 ? "" : waves.Phases[currentPhase].title;
@@ -89,31 +119,48 @@ public sealed class WaveDirector : MonoBehaviour
     {
         if (!enabled) return;
 
-        if (!bossSpawned && elapsedSeconds >= waves.BossSpawnSeconds)
+        configuration ??= RunRules.Selected.CreateConfiguration();
+        EndlessSegment = configuration.SegmentAt(elapsedSeconds);
+        int bossSlot = configuration.BossSlotAt(elapsedSeconds, waves.BossSpawnSeconds);
+        bool bossDue = configuration.IsEndless ? bossSlot > lastBossSlot : !bossSpawned && bossSlot >= 0;
+        if (bossDue)
         {
+            lastBossSlot = bossSlot;
             bossSpawned = true;
-            ActiveBoss = spawner.Spawn(waves.BossPrefab);
+            if (ActiveBoss == null || ActiveBoss.IsDead || !ActiveBoss.gameObject.activeInHierarchy)
+            {
+                if (ActiveBoss != null) ActiveBoss.Died -= OnBossDied;
+                ActiveBoss = spawner.Spawn(waves.BossPrefab,
+                    configuration.HealthFactorAt(elapsedSeconds), configuration.SpeedFactorAt(elapsedSeconds));
+                if (ActiveBoss != null) ActiveBoss.Died += OnBossDied;
+            }
+            NextBossSeconds = configuration.IsEndless ?
+                waves.BossSpawnSeconds + ((float)bossSlot + 1f) * configuration.BossRepeatSeconds : 0f;
         }
 
         WaveData.Phase[] phases = waves.Phases;
         int phaseIndex = waves.PhaseIndexAt(elapsedSeconds);
         WaveData.Phase phase = phases[phaseIndex];
         float multiplier = 1f + quilombo.Current / quilombo.Max + quilomboThresholdBonus;
+        CurrentSpawnInterval = configuration.SpawnIntervalAt(elapsedSeconds, phase.spawnIntervalSeconds, multiplier);
+        CurrentCommonLimit = configuration.CommonLimitAt(elapsedSeconds, phase.maximumAlive, multiplier);
+        PeakEnemyCount = Mathf.Max(PeakEnemyCount, ActiveEnemyCount);
         if (phaseIndex != currentPhase)
         {
             currentPhase = phaseIndex;
-            nextSpawnSeconds = elapsedSeconds + phase.spawnIntervalSeconds / multiplier;
+            nextSpawnSeconds = elapsedSeconds + CurrentSpawnInterval;
         }
 
         if (elapsedSeconds < nextSpawnSeconds) return;
-        nextSpawnSeconds = elapsedSeconds + phase.spawnIntervalSeconds / multiplier;
-        activeEnemies.RemoveAll(enemy => enemy == null || enemy.IsDead);
-        if (activeEnemies.Count >= Mathf.CeilToInt(phase.maximumAlive * multiplier)) return;
+        nextSpawnSeconds = elapsedSeconds + CurrentSpawnInterval;
+        activeEnemies.RemoveAll(enemy => enemy == null || enemy.IsDead || !enemy.gameObject.activeInHierarchy);
+        if (activeEnemies.Count >= CurrentCommonLimit) return;
 
         if (elitesEnabled && elitePrefab != null && Random.value < eliteChanceAfter50)
         {
-            Health elite = spawner.Spawn(elitePrefab);
+            Health elite = Spawn(elitePrefab, elapsedSeconds);
             if (elite != null) activeEnemies.Add(elite);
+            PeakEnemyCount = Mathf.Max(PeakEnemyCount, ActiveEnemyCount);
             return;
         }
 
@@ -124,9 +171,13 @@ public sealed class WaveDirector : MonoBehaviour
         {
             roll -= option.weight;
             if (roll >= 0) continue;
-            Health enemy = spawner.Spawn(option.prefab);
+            Health enemy = Spawn(option.prefab, elapsedSeconds);
             if (enemy != null) activeEnemies.Add(enemy);
+            PeakEnemyCount = Mathf.Max(PeakEnemyCount, ActiveEnemyCount);
             return;
         }
     }
+
+    private Health Spawn(GameObject prefab, float elapsed) => spawner.Spawn(prefab,
+        configuration.HealthFactorAt(elapsed), configuration.SpeedFactorAt(elapsed));
 }

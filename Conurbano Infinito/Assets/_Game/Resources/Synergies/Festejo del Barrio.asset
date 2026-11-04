@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cdd5502611444aebb246487f783a829f, type: 3}
+  m_Name: Festejo del Barrio
+  m_EditorClassIdentifier: Assembly-CSharp::SynergyData
+  stableId: synergy.festejo-del-barrio
+  displayName: Festejo del Barrio
+  requirements: "Pelota N4 + Petardo N4"
+  description: "Cada 5 impactos de Pelota: próximo Petardo +25% de radio."
+  effect: 2
+  weaponId: weapon.2551d0ef554504810a53f496f36a2ad8
+  weaponLevel: 4
+  passiveId:
+  passiveLevel: 3
+  secondWeaponId: weapon.68b9da5a7f3c648f5855290546f8d0cb
+  secondWeaponLevel: 4
+  triggerEvery: 5
+  multiplier: 1.25

@@ -30,6 +30,7 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField] private Sprite projectileSprite;
     [SerializeField] private Color projectileColor = Color.white;
     [SerializeField] private Vector2 projectileScale = new(0.2f, 0.4f);
+    [SerializeField] private bool directProjectile;
 
     public WeaponPattern Pattern => pattern;
     public int Damage => damage;
@@ -43,4 +44,5 @@ public sealed class WeaponData : ScriptableObject
     public Sprite ProjectileSprite => projectileSprite;
     public Color ProjectileColor => projectileColor;
     public Vector2 ProjectileScale => projectileScale;
+    public bool DirectProjectile => directProjectile;
 }

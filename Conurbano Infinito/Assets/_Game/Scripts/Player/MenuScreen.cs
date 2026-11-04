@@ -26,11 +26,13 @@ public sealed class MenuScreen : MonoBehaviour
         if (showingCharacters)
         {
             int count = CharacterData.All.Length;
-            characterFocus = GameUi.Navigate(characterFocus, count + 2, true);
+            characterFocus = GameUi.Navigate(characterFocus, count + 4, true);
             if (keyboard.downArrowKey.wasPressedThisFrame) characterFocus = count + 1;
             if (keyboard.upArrowKey.wasPressedThisFrame) characterFocus = focusedCharacter;
             if (characterFocus < count) focusedCharacter = characterFocus;
             if (keyboard.escapeKey.wasPressedThisFrame || (GameUi.Confirm && characterFocus == count)) showingCharacters = false;
+            else if (GameUi.Confirm && characterFocus >= count + 2)
+                RunRules.Select(characterFocus == count + 2 ? GameMode.Classic : GameMode.Endless);
             else if (GameUi.Confirm) StartGame();
             return;
         }
@@ -97,7 +99,7 @@ public sealed class MenuScreen : MonoBehaviour
         }
         GameUi.Text(new Rect(x, panel.y + 36, 376, 52), "¿Salimos a la plaza?", 34, GameUi.Ink);
         GameUi.Text(new Rect(x, panel.y + 98, 376, 60),
-            "Aguantá 4 minutos.\nLa Jefa cae a los 3.", 23, GameUi.Petrol, TextAnchor.UpperLeft);
+            "Clásico: 4 minutos.\nInfinito: hasta donde aguantes.", 23, GameUi.Petrol, TextAnchor.UpperLeft);
         string[] labels = { "Jugar", "Créditos", "Salir" };
         string[] keys = { "ENTER", "C", null };
         for (int i = 0; i < labels.Length; i++)
@@ -146,7 +148,7 @@ public sealed class MenuScreen : MonoBehaviour
         GameUi.Text(new Rect(panel.x + 24, panel.y + 14, 968, 44), "¿Quién sale a la plaza?", 36,
             GameUi.Ink, TextAnchor.MiddleCenter);
         GameUi.Text(new Rect(panel.x + 24, panel.y + 62, 968, 28),
-            "Flechas / Tab: elegir · Enter: jugar · Esc: volver", 18, GameUi.Petrol, TextAnchor.MiddleCenter);
+            "Elegí personaje y modo · Tab: recorrer · Enter: confirmar", 18, GameUi.Petrol, TextAnchor.MiddleCenter);
         CharacterData[] characters = CharacterData.All;
         // shortcut: grilla de dos personajes, adaptar al incorporar un tercero.
         for (int i = 0; i < characters.Length; i++)
@@ -167,7 +169,7 @@ public sealed class MenuScreen : MonoBehaviour
             }
             GameUi.Text(new Rect(card.x + 16, card.y + 206, 440, 40), character.DisplayName, 30,
                 GameUi.Ink, TextAnchor.MiddleCenter);
-            GameUi.Text(new Rect(card.x + 24, card.y + 246, 424, 50), character.Description, 20,
+            GameUi.Text(new Rect(card.x + 24, card.y + 246, 424, 50), character.AffinityDescription, 20,
                 GameUi.Petrol, TextAnchor.UpperCenter, true);
             GameUi.Icon("heart", new Rect(card.x + 24, card.y + 300, 24, 24));
             GameUi.Text(new Rect(card.x + 56, card.y + 298, 120, 28), "Vida", 20, GameUi.Petrol);
@@ -181,9 +183,19 @@ public sealed class MenuScreen : MonoBehaviour
             GameUi.Text(new Rect(card.x + 76, card.y + 370, 348, 28), character.StartingWeapon.name, 23, GameUi.Ink);
             if (GUI.Button(card, GUIContent.none, GUIStyle.none)) characterFocus = focusedCharacter = i;
         }
-        GameUi.Text(new Rect(panel.x + 24, panel.y + 536, 476, 28),
-            "Elegí tu estilo. El barrio es el mismo.", 18, GameUi.Petrol);
-        if (GameUi.Button(new Rect(panel.x + 24, panel.y + 566, 300, 48), "Volver", "ESC", characterFocus == characters.Length))
+        for (int i = 0; i < 2; i++)
+        {
+            bool selected = (int)RunRules.SelectedMode == i;
+            var modeButton = new Rect(panel.x + 24 + i * 244, panel.y + 530, 232, 42);
+            if (GameUi.Button(modeButton, i == 0 ? "Clásico · 4 min" : "Infinito", null,
+                characterFocus == characters.Length + 2 + i, selected))
+            {
+                RunRules.Select((GameMode)i);
+                characterFocus = characters.Length + 2 + i;
+            }
+            if (selected) GameUi.Outline(modeButton, GameUi.Gold, 3);
+        }
+        if (GameUi.Button(new Rect(panel.x + 24, panel.y + 580, 300, 38), "Volver", "ESC", characterFocus == characters.Length))
             showingCharacters = false;
         if (GameUi.Button(new Rect(panel.x + 544, panel.y + 548, 448, 66), "A la plaza", "ENTER",
             characterFocus == characters.Length + 1, true))
