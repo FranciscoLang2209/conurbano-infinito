@@ -13,6 +13,7 @@ public sealed class RiskZone : MonoBehaviour
     public float Progress { get; private set; }
     public bool HasPendingReward => !rewardStarted;
     public string DisplayName => data.DisplayName;
+    public event System.Action<RiskZone> RewardEarned;
     public Vector3 ViewportPosition => gameCamera.WorldToViewportPoint(transform.position);
 
     private bool playerInside;
@@ -92,9 +93,11 @@ public sealed class RiskZone : MonoBehaviour
 
     private void StartReward()
     {
+        if (rewardStarted || playerHealth == null || playerHealth.IsDead || Time.timeScale == 0f) return;
         rewardStarted = true;
         quilombo.Add(data.QuilomboReward);
         data.ApplyReward(player);
+        RewardEarned?.Invoke(this);
         if (data.RewardDuration > 0f)
             rewardEndTime = Time.time + data.RewardDuration;
         else
@@ -157,7 +160,7 @@ public sealed class RiskZone : MonoBehaviour
                     20, GameUi.Ink, TextAnchor.MiddleCenter);
             if (!rewardStarted)
                 GameUi.Text(new Rect(panel.x + 24f, panel.y + (previewReward ? 128f : 94f), 392f, 28f),
-                    "El Quilombo aumenta la presión enemiga.", 18, GameUi.Petrol, TextAnchor.MiddleCenter);
+                    "+250 puntos · más presión y puntos por bajas.", 18, GameUi.Petrol, TextAnchor.MiddleCenter);
             if (!rewardStarted)
                 GameUi.Bar(new Rect(panel.x + 24f, panel.yMax - 22f, 392f, 10f),
                     Progress / data.RequiredDuration, GameUi.Gold);

@@ -8,6 +8,7 @@ public sealed class RunRules : ScriptableObject
 {
     [SerializeField] private string stableId;
     [SerializeField] private GameMode mode;
+    [SerializeField] private string rulesetVersion = "builds-infinito-1";
     [SerializeField, Min(1f)] private float openingSeconds = 240f;
     [SerializeField, Min(1f)] private float segmentSeconds = 120f;
     [SerializeField, Min(0f)] private float healthPerSegment = 0.2f;
@@ -47,7 +48,7 @@ public sealed class RunRules : ScriptableObject
 
     public RunConfiguration CreateConfiguration() => new(stableId, mode, openingSeconds, segmentSeconds,
         healthPerSegment, speedPerSegment, maximumSpeedFactor, pressurePerSegment, maximumFrequencyFactor,
-        minimumSpawnInterval, maximumCommonEnemies, bossRepeatSeconds, maximumGems, maximumProjectiles);
+        minimumSpawnInterval, maximumCommonEnemies, bossRepeatSeconds, maximumGems, maximumProjectiles, rulesetVersion);
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSelection() { all = null; SelectedMode = GameMode.Classic; }
@@ -58,6 +59,7 @@ public sealed class RunConfiguration
 {
     public string StableId { get; }
     public GameMode Mode { get; }
+    public string RulesetVersion { get; }
     public bool IsEndless => Mode == GameMode.Endless;
     public float OpeningSeconds { get; }
     public float SegmentSeconds { get; }
@@ -70,16 +72,17 @@ public sealed class RunConfiguration
 
     public RunConfiguration(string id, GameMode mode, float opening, float segment, float health, float speed,
         float maxSpeed, float pressure, float maxFrequency, float minInterval, int enemies,
-        float bossRepeat, int gems, int projectiles)
+        float bossRepeat, int gems, int projectiles, string rulesetVersion = "builds-infinito-1")
     {
         foreach (float value in new[] { opening, segment, maxSpeed, maxFrequency, minInterval, bossRepeat })
             if (!(value > 0f) || float.IsInfinity(value)) throw new ArgumentException("Regla de partida inválida.");
         foreach (float value in new[] { health, speed, pressure })
             if (!(value >= 0f) || float.IsInfinity(value)) throw new ArgumentException("Curva de partida inválida.");
-        if (string.IsNullOrWhiteSpace(id) || (mode != GameMode.Classic && mode != GameMode.Endless) ||
+        if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(rulesetVersion) || (mode != GameMode.Classic && mode != GameMode.Endless) ||
             maxSpeed < 1f || maxFrequency < 1f || enemies < 1 || gems < 1 || projectiles < 1)
             throw new ArgumentException("Perfil de partida inválido.");
         StableId = id; Mode = mode; OpeningSeconds = opening; SegmentSeconds = segment;
+        RulesetVersion = rulesetVersion;
         healthPerSegment = health; speedPerSegment = speed; maximumSpeedFactor = maxSpeed;
         pressurePerSegment = pressure; maximumFrequencyFactor = maxFrequency; minimumSpawnInterval = minInterval;
         MaximumCommonEnemies = enemies; BossRepeatSeconds = bossRepeat; MaximumGems = gems; MaximumProjectiles = projectiles;

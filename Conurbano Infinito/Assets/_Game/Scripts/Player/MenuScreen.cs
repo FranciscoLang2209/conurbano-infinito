@@ -12,6 +12,7 @@ public sealed class MenuScreen : MonoBehaviour
     private int characterFocus;
     private GUIStyle volumeThumb;
     private int focusedAction;
+    private RecordsView recordsView;
 
     private void Awake()
     {
@@ -21,6 +22,7 @@ public sealed class MenuScreen : MonoBehaviour
 
     private void Update()
     {
+        if (recordsView != null && recordsView.IsOpen) { recordsView.Update(); return; }
         Keyboard keyboard = Keyboard.current;
         if (keyboard == null) return;
         if (showingCharacters)
@@ -41,10 +43,11 @@ public sealed class MenuScreen : MonoBehaviour
             if (keyboard.escapeKey.wasPressedThisFrame || GameUi.Confirm) showingCredits = false;
             return;
         }
-        focusedAction = GameUi.Navigate(focusedAction, 4);
+        focusedAction = GameUi.Navigate(focusedAction, 5);
         if (keyboard.cKey.wasPressedThisFrame) showingCredits = true;
+        else if (keyboard.lKey.wasPressedThisFrame) ActivateAction(1);
         else if (GameUi.Confirm) ActivateAction(focusedAction);
-        if (focusedAction == 3)
+        if (focusedAction == 4)
         {
             if (keyboard.leftArrowKey.wasPressedThisFrame) audioDirector.MasterVolume -= 0.05f;
             if (keyboard.rightArrowKey.wasPressedThisFrame) audioDirector.MasterVolume += 0.05f;
@@ -59,8 +62,13 @@ public sealed class MenuScreen : MonoBehaviour
             characterFocus = focusedCharacter;
             showingCharacters = true;
         }
-        else if (index == 1) showingCredits = true;
-        else if (index == 2) Application.Quit();
+        else if (index == 2) showingCredits = true;
+        else if (index == 3) Application.Quit();
+        else if (index == 1)
+        {
+            RunConfiguration mode = RunRules.Selected.CreateConfiguration();
+            recordsView = new RecordsView(LocalRecords.OpenDefault(), mode.StableId, mode.RulesetVersion);
+        }
     }
 
     private void OnGUI()
@@ -70,6 +78,10 @@ public sealed class MenuScreen : MonoBehaviour
         // The awning stripe repeats at an integer UI pixel spacing.
         for (int i = 0; i < GameUi.Width / 64 + 1; i++)
             GameUi.Fill(new Rect(i * 64, 0, 32, 10), GameUi.Gold);
+        if (recordsView != null && recordsView.IsOpen)
+        {
+            recordsView.Draw(); GameUi.End(previous); return;
+        }
         if (showingCharacters)
         {
             bool started = DrawCharacters();
@@ -97,22 +109,23 @@ public sealed class MenuScreen : MonoBehaviour
             GameUi.End(previous);
             return;
         }
-        GameUi.Text(new Rect(x, panel.y + 36, 376, 52), "¿Salimos a la plaza?", 34, GameUi.Ink);
-        GameUi.Text(new Rect(x, panel.y + 98, 376, 60),
+        GameUi.Text(new Rect(x, panel.y + 20, 376, 52), "¿Salimos a la plaza?", 34, GameUi.Ink);
+        GameUi.Text(new Rect(x, panel.y + 78, 376, 60),
             "Clásico: 4 minutos.\nInfinito: hasta donde aguantes.", 23, GameUi.Petrol, TextAnchor.UpperLeft);
-        string[] labels = { "Jugar", "Créditos", "Salir" };
-        string[] keys = { "ENTER", "C", null };
+        string[] labels = { "Jugar", "Récords", "Créditos", "Salir" };
+        string[] keys = { "ENTER", "L", "C", null };
         for (int i = 0; i < labels.Length; i++)
         {
-            if (!GameUi.Button(new Rect(x, panel.y + 172 + i * 62, 376, 50), labels[i], keys[i],
+            if (!GameUi.Button(new Rect(x, panel.y + 150 + i * 54, 376, 50), labels[i], keys[i],
                 focusedAction == i, i == 0)) continue;
             GameUi.End(previous);
+            focusedAction = i;
             ActivateAction(i);
             GUIUtility.ExitGUI();
         }
         GameUi.Text(new Rect(x, panel.y + 378, 376, 28),
-            $"Volumen  {Mathf.RoundToInt(audioDirector.MasterVolume * 100)}%" + (focusedAction == 3 ? "  < / >" : ""),
-            20, focusedAction == 3 ? GameUi.Ink : GameUi.Petrol);
+            $"Volumen  {Mathf.RoundToInt(audioDirector.MasterVolume * 100)}%" + (focusedAction == 4 ? "  < / >" : ""),
+            20, focusedAction == 4 ? GameUi.Ink : GameUi.Petrol);
         volumeThumb ??= new GUIStyle(GUI.skin.horizontalSliderThumb)
         {
             fixedWidth = 16, fixedHeight = 24,

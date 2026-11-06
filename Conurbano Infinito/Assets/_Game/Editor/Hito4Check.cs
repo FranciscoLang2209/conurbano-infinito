@@ -98,6 +98,7 @@ public static class Hito4Check
             .SetValue(game, game.ElapsedSeconds);
         typeof(GameManager).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic)
             .Invoke(game, null);
+        typeof(GameManager).GetMethod("LateUpdate", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(game, null);
         if (game.State != GameManager.GameState.Victory || Time.timeScale != 0f ||
             Object.FindFirstObjectByType<SpawnManager>().enabled)
         {

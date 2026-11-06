@@ -12,6 +12,8 @@ public sealed class Health : MonoBehaviour
     public bool IsDead => remainingHealth <= 0.0001f;
     public bool IsFull => remainingHealth >= MaximumHealth - 0.0001f;
     public uint LifeId { get; private set; }
+    public float InvulnerabilitySeconds => invulnerabilitySeconds;
+    public int StartingHealth => maximumHealth;
 
     public event Action Damaged;
     public event Action Died;

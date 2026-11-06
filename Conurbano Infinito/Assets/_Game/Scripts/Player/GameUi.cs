@@ -168,8 +168,14 @@ public static class GameUi
         }
     }
 
-    public static void Text(Rect rect, string value, int size, Color color,
-        TextAnchor alignment = TextAnchor.MiddleLeft, bool wrap = false)
+    public static float ResultTextHeight(string value, float width)
+    {
+        GUIStyle style = TextStyle(18);
+        style.wordWrap = true;
+        return style.CalcHeight(new GUIContent(value), width * scale) / scale;
+    }
+
+    private static GUIStyle TextStyle(int size)
     {
         // Rasterize the dynamic font at the output resolution, not a stretched reference atlas.
         int pixels = Mathf.Max(16, Mathf.RoundToInt(Mathf.Max(18, size) * scale));
@@ -186,6 +192,13 @@ public static class GameUi
             };
             Styles.Add(key, style);
         }
+        return style;
+    }
+
+    public static void Text(Rect rect, string value, int size, Color color,
+        TextAnchor alignment = TextAnchor.MiddleLeft, bool wrap = false)
+    {
+        GUIStyle style = TextStyle(size);
         if (style.font.material.mainTexture != null) style.font.material.mainTexture.filterMode = FilterMode.Bilinear;
         style.normal.textColor = style.hover.textColor = style.active.textColor =
             style.focused.textColor = DisplayColor(color);

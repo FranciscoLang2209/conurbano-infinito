@@ -102,7 +102,7 @@ public static class EndlessCheck
         await Fresh(GameMode.Classic);
         SetClock(239.9f); Call(game, "Update");
         Require(game.State == GameManager.GameState.Playing, "Classic wins early.");
-        SetClock(240f); Call(game, "Update");
+        SetClock(240f); Call(game, "Update"); Call(game, "LateUpdate");
         Require(game.State == GameManager.GameState.Victory && game.ElapsedSeconds == 240f, "Classic deadline.");
         await Fresh(GameMode.Endless);
         foreach (float time in new[] { 239.9f, 240f, 240.1f })

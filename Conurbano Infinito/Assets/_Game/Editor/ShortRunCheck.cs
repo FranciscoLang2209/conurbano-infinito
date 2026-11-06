@@ -87,6 +87,7 @@ public static class ShortRunCheck
 
             typeof(GameManager).GetField("<ElapsedSeconds>k__BackingField", Flags).SetValue(game, 240f);
             Invoke(game, "Update");
+            Invoke(game, "LateUpdate");
             Require(game.State == GameManager.GameState.Victory && Time.timeScale == 0f &&
                 !weapons.enabled && !director.enabled, "La victoria no detiene el combate a los 4:00.");
             game.RestartGame();

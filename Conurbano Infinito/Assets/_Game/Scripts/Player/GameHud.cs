@@ -171,6 +171,11 @@ public sealed class GameHud : MonoBehaviour
         GameUi.Text(new Rect(qx + 58, top + 68, 210, 28),
             displayedQuilombo >= 25 ? "Al rojo vivo" : displayedQuilombo >= 10 ? "Se picó" : "Barrio tranqui",
             20, GameUi.Cream);
+        GameUi.Surface(new Rect(qx, top + 112, 284, 62), "enamel");
+        GameUi.Text(new Rect(qx + 12, top + 114, 260, 26),
+            gameManager.Score.IsPractice ? "Puntos · Práctica" : "Puntos", 18, GameUi.Gold);
+        GameUi.Text(new Rect(qx + 12, top + 140, 260, 30), gameManager.Score.Points.ToString(),
+            20, GameUi.Cream, TextAnchor.MiddleRight);
 
         if (Time.unscaledTime < feedbackUntil && gameManager.State == GameManager.GameState.Playing &&
             (upgrades == null || !upgrades.IsShowing))

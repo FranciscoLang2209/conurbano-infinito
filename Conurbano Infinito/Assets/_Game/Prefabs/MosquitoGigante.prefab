@@ -220,6 +220,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ExperienceDrop
   gemPrefab: {fileID: 7100000004, guid: b5828385944e429d8747ca7ea26d81f5, type: 3}
   experienceValue: 1
+  scoreCategory: 0
 --- !u!114 &7237629750586625833
 MonoBehaviour:
   m_ObjectHideFlags: 0

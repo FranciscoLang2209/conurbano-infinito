@@ -7,6 +7,9 @@ public sealed class SpawnManager : MonoBehaviour
     [SerializeField, Min(0f)] private float minimumPlayerDistance = 7f;
     [SerializeField, Min(0.1f)] private float offscreenPadding = 1.5f;
     private ObjectPool pool;
+    public event System.Action<EnemyScoreCategory> EnemyKilled;
+
+    private void OnEnemyKilled(EnemyScoreCategory category) => EnemyKilled?.Invoke(category);
 
     private void Awake()
     {
@@ -49,6 +52,11 @@ public sealed class SpawnManager : MonoBehaviour
             Quaternion.identity);
         if (enemy == null) return null;
         Health health = enemy.GetComponent<Health>();
+        if (enemy.TryGetComponent(out ExperienceDrop drop))
+        {
+            drop.EnemyKilled -= OnEnemyKilled;
+            drop.EnemyKilled += OnEnemyKilled;
+        }
         // Spawn is synchronous: configure from prefab values before assigning targets or the next physics step.
         health.ConfigureSpawnHealth(healthFactor);
         if (enemy.TryGetComponent(out MosquitoChase mosquito)) { mosquito.SpawnSpeedFactor = speedFactor; mosquito.SetTarget(player); }
