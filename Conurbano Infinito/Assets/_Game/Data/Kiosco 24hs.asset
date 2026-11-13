@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Kiosco 24hs
   m_EditorClassIdentifier: Assembly-CSharp::RiskZoneData
   displayName: Kiosco 24hs
-  completionMessage: KIOSCO 24HS
+  completionMessage: "Algo para el camino"
   requiredDuration: 0
   quilomboReward: 10
   damageMultiplier: 1

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
   stableId: evolution.pelota-final
   displayName: Pelota de Final de Barrio
-  description: "Dos rebotes extra. Vuelve una vez al primer blanco vivo."
+  description: "+2 rebotes. Vuelve una vez al primer enemigo si sigue vivo."
   icon: {fileID: 0}
   maximumLevel: 1
   effect: 13

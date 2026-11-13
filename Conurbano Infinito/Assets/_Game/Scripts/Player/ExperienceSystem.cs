@@ -23,6 +23,9 @@ public sealed class ExperienceSystem : MonoBehaviour
     private Health health;
     private float collectionMultiplier = 1f;
     private float collectionBonusUntil;
+    public float CollectionBonusRemaining => Mathf.Max(0f, collectionBonusUntil - Time.time);
+    public float CollectionBonusPercent => CollectionBonusRemaining > 0f ? (collectionMultiplier - 1f) * 100f : 0f;
+    public void ClearTemporaryCollection() { collectionMultiplier = 1f; collectionBonusUntil = 0f; }
 
     private void Awake()
     {
@@ -46,8 +49,8 @@ public sealed class ExperienceSystem : MonoBehaviour
 
     public void ApplyCollectionRadiusMultiplier(float multiplier, float duration)
     {
-        if (!(multiplier > 1f) || !(duration > 0f) || float.IsInfinity(multiplier)) return;
-        collectionMultiplier = multiplier;
+        if (!(multiplier > 1f) || !(duration > 0f) || float.IsInfinity(multiplier) || float.IsInfinity(duration)) return;
+        collectionMultiplier = Mathf.Max(CollectionBonusRemaining > 0f ? collectionMultiplier : 1f, multiplier);
         collectionBonusUntil = Time.time + duration;
     }
 

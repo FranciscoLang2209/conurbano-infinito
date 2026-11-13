@@ -57,7 +57,7 @@ public static class RecordsCheck
     }
 
     private static RunResult Result(string id, int kills = 1, float seconds = 10, GameMode mode = GameMode.Classic,
-        string version = "builds-infinito-1", string practice = null, GameManager.GameState reason = GameManager.GameState.Defeat)
+        string version = null, string practice = null, GameManager.GameState reason = GameManager.GameState.Defeat)
     {
         var score = new ScoreSystem();
         for (int i = 0; i < kills; i++) score.EnemyKilled(EnemyScoreCategory.Common, 0);
@@ -65,7 +65,7 @@ public static class RecordsCheck
         if (practice != null) score.MarkPractice(practice);
         score.Freeze();
         RunConfiguration config = RunRules.All[(int)mode].CreateConfiguration();
-        config = new RunConfiguration(config.StableId, mode, 240, 120, .2f, .02f, 1.3f, .08f, 2, .2f, 150, 240, 256, 256, version);
+        config = new RunConfiguration(config.StableId, mode, 240, 120, .2f, .02f, 1.3f, .08f, 2, .2f, 150, 240, 256, 256, version ?? config.RulesetVersion);
         return new RunResult(id, new DateTime(2026, 11, 6, 12, 0, 0, DateTimeKind.Utc), "records-qa", config,
             CharacterData.Selected.StableId, seconds, 0, reason, score, weapons);
     }
@@ -76,7 +76,7 @@ public static class RecordsCheck
         var records = new LocalRecords(savePath);
         string classic = RunRules.All[0].CreateConfiguration().StableId;
         string endless = RunRules.All[1].CreateConfiguration().StableId;
-        const string version = "builds-infinito-1";
+        string version = RunRules.All[0].CreateConfiguration().RulesetVersion;
         Require(records.LastResult == null && records.Table(classic, version).Length == 0, "Missing file.");
         RunResult first = Result("000-first");
         Require(records.Save(first) && File.Exists(savePath + ".bak"), "First atomic save / backup.");
@@ -88,8 +88,8 @@ public static class RecordsCheck
         Require(records.Save(Result("run-23", 1000)) && records.LastResult.runId == "run-24", "Duplicate changed identity/score.");
         Require(records.Save(Result("000-first", 1000)) && records.Table(classic, version)[0].runId == "run-24", "Evicted ID registered again.");
         Require(records.Save(Result("endless", 2, 10, GameMode.Endless)) && records.Table(endless, version).Length == 1, "Mode table.");
-        Require(records.Save(Result("old-version", 2, 10, GameMode.Classic, "previous-rules")) &&
-            records.Table(classic, "previous-rules").Length == 1 && records.Table(classic, version).Length == 20, "Version history.");
+        Require(records.Save(Result("old-version", 2, 10, GameMode.Classic, "builds-infinito-1")) &&
+            records.Table(classic, "builds-infinito-1").Length == 1 && records.Table(classic, version).Length == 20, "Previous delivery version history.");
         Require(records.Save(Result("practice", practice: "F9")) && records.LastResult.practiceReason == "F9" && records.Table(classic, version).Length == 20, "Practice record leaked.");
         Require(records.Save(Result("abandon", reason: GameManager.GameState.Abandoned)) && records.LastResult.endReason == GameManager.GameState.Abandoned && !records.LastResult.isRecordEligible, "Abandon record leaked.");
         string atomicPath = Path.Combine(output, "fixtures", "atomic.json");
@@ -142,6 +142,13 @@ public static class RecordsCheck
         string blocker = Path.Combine(output, "fixtures", "blocker"); File.WriteAllText(blocker, "not a directory");
         var failed = new LocalRecords(Path.Combine(blocker, "records.json"));
         Require(!failed.Save(first) && failed.Notice != null, "Write failure escaped / reported success.");
+        Require(!failed.Notice.Contains("dañado") && !failed.Notice.Contains("inválido"), "Error copy invents a cause or exposes validation state.");
+        StoredRun unknownCharacter = StoredRun.FromResult(Result("copy-private-run", practice: "private-qa-reason"));
+        unknownCharacter.characterId = "private-character-id";
+        string summary = string.Join("\n", unknownCharacter.SummaryLines());
+        Require(summary.Contains("Personaje anterior") && summary.Contains("no cuenta para los récords") &&
+            !summary.Contains("copy-private-run") && !summary.Contains("private-character-id") &&
+            !summary.Contains("private-qa-reason") && !summary.Contains("Inicio UTC"), "Summary leaks internal data.");
         File.WriteAllText(Path.Combine(output, "files-pass.txt"), "top20, tables, exact ties, duplicate and evicted IDs, last result, practice, abandonment, reload, names/IDs, backup, missing/corrupt/old/future JSON, write failure\n");
     }
 
@@ -171,6 +178,17 @@ public static class RecordsCheck
         await Press(Key.L); view = (RecordsView)Field(game, "recordsView");
         Require(view.IsOpen && Time.timeScale == 0, "Terminal records unpaused.");
         await CaptureSizes("records-table");
+        foreach (string failure in new[] { "lectura", "version", "guardado" })
+        {
+            string path = Path.Combine(output, "fixtures", "copy-" + failure + ".json");
+            File.WriteAllText(path, failure == "version" ? "{\"schemaVersion\":99}" : "broken");
+            LocalRecords problem = failure == "guardado" ? new LocalRecords(Path.Combine(output, "fixtures", "blocker", "copy.json")) : new LocalRecords(path);
+            if (failure == "guardado") Require(!problem.Save(Result("copy-failed-save")), "Error fixture saved unexpectedly.");
+            Require(problem.Notice != null, "Missing recoverable notice.");
+            Set(game, "recordsView", new RecordsView(problem, game.Result.ModeId, game.Result.RulesetVersion));
+            await CaptureSizes("records-aviso-" + failure);
+        }
+        Set(game, "recordsView", view);
         // Full build is runtime-only; definitions and scene assets remain untouched.
         PrepareBuild();
         var full = new LocalRecords(Path.Combine(output, "fixtures", "full.json"));

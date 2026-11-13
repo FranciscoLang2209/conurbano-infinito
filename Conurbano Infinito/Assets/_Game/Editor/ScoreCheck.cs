@@ -54,7 +54,7 @@ public static class ScoreCheck
             GameUi.CheckTextLayout = null;
             EditorApplication.ExitPlaymode();
             await Until(() => !EditorApplication.isPlaying);
-            Debug.Log("SCORE_CHECK_PASS arithmetic=3240,fractions,saturation pool=6-prefabs,12-lives death-vs-despawn=True pois=3,once pause-queue=True immutable-close=True defeat-priority=True abandonment=True practice-latched=True modes=2 characters=2 layouts=4 knownEditorSearchErrors=" + searchErrors);
+            Debug.Log("SCORE_CHECK_PASS arithmetic=3240,fractions,saturation pool=6-prefabs,12-lives death-vs-despawn=True pois=6,once pause-queue=True immutable-close=True defeat-priority=True abandonment=True practice-latched=True modes=2 characters=2 layouts=4 knownEditorSearchErrors=" + searchErrors);
             EditorApplication.Exit(0);
         }
         catch (Exception error)
@@ -147,8 +147,8 @@ public static class ScoreCheck
             Call(zone, "StartReward"); Call(zone, "StartReward"); Call(zone, "Complete"); Call(zone, "Complete");
             Require(game.Score.PoiCount == before + 1, "POI score must follow first earned reward only.");
         }
-        Require(game.Score.PoiCount == 3 && game.Score.PoiCentipoints == 75000, "Three POIs.");
-        Debug.Log("SCORE_EVENTS_PASS lives=72 despawns=72 renamed=True current-quilombo=True duplicate-death=True subscriptions-balanced=True pois=3,once");
+        Require(game.Score.PoiCount == 6 && game.Score.PoiCentipoints == 150000, "Six POIs.");
+        Debug.Log("SCORE_EVENTS_PASS lives=72 despawns=72 renamed=True current-quilombo=True duplicate-death=True subscriptions-balanced=True pois=6,once");
     }
 
     private static async Task CheckPauseAndClose()
@@ -182,7 +182,7 @@ public static class ScoreCheck
             "Deadline death priority / atomic result / practice eligibility.");
         Guid.ParseExact(final.RunId, "N");
         Require(final.StartedUtc.Kind == DateTimeKind.Utc && final.CharacterId == CharacterData.Selected.StableId &&
-            final.ModeId == game.Configuration.StableId && final.RulesetVersion == "builds-infinito-1" && final.BuildVersion == Application.version,
+            final.ModeId == game.Configuration.StableId && final.RulesetVersion == "entrega-pois-2" && final.BuildVersion == Application.version,
             "Missing result identity / versions.");
         int weaponCount = final.Weapons.Count; long points = final.Centipoints;
         weapons.EquipWeapon(AssetDatabase.LoadAssetAtPath<WeaponData>("Assets/_Game/Data/Pelota de Potrero.asset"));

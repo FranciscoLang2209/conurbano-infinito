@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
   stableId: upgrade.4a34553a196d6404cba4a0143cc2d57e
   displayName: "Petardo \xB7 Cadencia"
-  description: -10% de intervalo entre petardos.
+  description: "10% menos espera entre petardos."
   icon: {fileID: 0}
   maximumLevel: 3
   effect: 6

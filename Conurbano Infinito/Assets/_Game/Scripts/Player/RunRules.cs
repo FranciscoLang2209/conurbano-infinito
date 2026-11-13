@@ -23,6 +23,12 @@ public sealed class RunRules : ScriptableObject
     [SerializeField, Min(1)] private int maximumProjectiles = 256;
 
     private static RunRules[] all;
+    public static string RulesetName(string version) => version switch
+    {
+        "entrega-pois-2" => "Seis lugares del barrio",
+        "builds-infinito-1" => "Edición de tres lugares",
+        _ => "Edición anterior"
+    };
     public static GameMode SelectedMode { get; private set; }
     public static RunRules Selected => All[(int)SelectedMode];
     public static RunRules[] All

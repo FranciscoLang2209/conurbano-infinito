@@ -80,7 +80,7 @@ public sealed class RecordsView
     {
         var panel = new Rect(GameUi.SafeArea.center.x - 508, GameUi.SafeArea.center.y - 316, 1016, 632);
         GameUi.Sign(panel, GameUi.Gold);
-        GameUi.Text(new Rect(panel.x + 24, panel.y + 14, 968, 44), detail == null ? "Récords de este equipo" : $"Build · {detail.Points} puntos", 34, GameUi.Ink);
+        GameUi.Text(new Rect(panel.x + 24, panel.y + 14, 968, 44), detail == null ? "Récords de este equipo" : $"Equipo · {detail.Points} puntos", 34, GameUi.Ink);
         GameUi.Text(new Rect(panel.x + 24, panel.y + 62, 968, 28),
             "Tabla local · Flechas / Tab + Enter · Mouse · Esc: volver", 18, GameUi.Petrol);
         if (detail != null)
@@ -91,16 +91,16 @@ public sealed class RecordsView
             return;
         }
         DrawButton(new Rect(panel.x + 24, panel.y + 108, 288, 46), modes[modeIndex].IsEndless ? "Infinito" : "Clásico", 0);
-        DrawButton(new Rect(panel.x + 324, panel.y + 108, 668, 46), "Reglas: " + versions[versionIndex], 1);
+        DrawButton(new Rect(panel.x + 324, panel.y + 108, 668, 46), "Reglas: " + RunRules.RulesetName(versions[versionIndex]), 1);
         GameUi.Text(new Rect(panel.x + 24, panel.y + 164, 968, 28),
-            "Puntos ↓ · Tiempo ↓ · Run ID ordinal ↑    |    Elegí una marca para ver su build", 18, GameUi.Petrol);
+            "Más puntos primero; si empatan, más tiempo. Elegí una marca para ver su equipo", 18, GameUi.Petrol);
         if (table.Length == 0) GameUi.Text(new Rect(panel.x + 24, panel.y + 230, 968, 60),
-            "Todavía no hay marcas en este modo y versión.\nPráctica y abandono sólo figuran como último resultado.", 22, GameUi.Ink, TextAnchor.UpperLeft, true);
+            "Todavía no hay marcas con estas reglas.\nLas prácticas y las partidas que dejaste sólo aparecen en Último resultado.", 22, GameUi.Ink, TextAnchor.UpperLeft, true);
         for (int i = 0; i < VisibleRows; i++)
         {
             StoredRun run = table[page * 5 + i];
-            string character = run.characterId;
-            foreach (CharacterData data in CharacterData.All) if (data.StableId == character) { character = data.DisplayName; break; }
+            string character = "Personaje anterior";
+            foreach (CharacterData data in CharacterData.All) if (data.StableId == run.characterId) { character = data.DisplayName; break; }
             var row = new Rect(panel.x + 24, panel.y + 204 + i * 58, 968, 50);
             if (GameUi.Button(row, $"{page * 5 + i + 1}.  {run.Points} pt · {run.activeSeconds:0.0} s · {character}", null, focus == i + 2))
             { focus = i + 2; Activate(focus); }

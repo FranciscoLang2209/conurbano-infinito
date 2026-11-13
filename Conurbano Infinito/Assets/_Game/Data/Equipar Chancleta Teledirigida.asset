@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
   stableId: upgrade.a9d94897ac9041e4a02142ffc9079abf
   displayName: Chancleta Teledirigida
-  description: Equipá Chancleta Teledirigida.
+  description: "Lanzá una chancleta que sigue a su blanco."
   icon: {fileID: 0}
   maximumLevel: 1
   effect: 4

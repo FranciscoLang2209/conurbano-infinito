@@ -68,3 +68,7 @@ Licencia íntegra y README original en `Assets/ThirdParty/NinjaAdventure/`. CC0 
 Se reemplazaron `LaPibaDelClub.png`, los seis `PibaStride*` y su retrato, y se añadió `PibaIdle2.png`. El nuevo arte se creó con la herramienta integrada `image_gen` de OpenAI, tomando como referencias los dos personajes propios del proyecto. No proviene de Ninja Adventure ni se le atribuye CC0. La hoja generada, el prompt, la adaptación técnica a 48×48/48 PPU, la paleta y las capturas se conservan en `Docs/PibaRedesign/`. Se conservaron los GUID de los archivos reemplazados y las estadísticas del personaje.
 
 Los antiguos cuadros de La Piba descritos en la sección del Club fueron reemplazados por este diseño. `Tools/generate_club_art.py` conserva los PNG editados de La Piba y continúa generando el resto del arte procedural del Club.
+
+## Nuevos lugares de la entrega — 2026-11-13
+
+`Art/Sprites/Environment/MuralDelBarrio.png`, `RondaDeMate.png` y `Bicicleteria.png` son dibujos originales de 96×96, generados únicamente por `delivery_pois()` en `Tools/generate_club_art.py` con Canvas y la paleta del proyecto. No incorporan recursos externos; el arte previo permanece intacto.

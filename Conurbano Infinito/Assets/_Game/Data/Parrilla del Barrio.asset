@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Parrilla del Barrio
   m_EditorClassIdentifier: Assembly-CSharp::RiskZoneData
   displayName: Parrilla del Barrio
-  completionMessage: ¡ASADO LISTO!
+  completionMessage: "¡Asado listo!"
   requiredDuration: 5
   quilomboReward: 15
   damageMultiplier: 1.2

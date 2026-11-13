@@ -146,3 +146,7 @@ No se generó build de distribución ni se midieron balance humano o rendimiento
 ## Siguiente incorporación prevista
 
 Patovica: resistencia frontal y ventana de vulnerabilidad al preparar un golpe, con aviso legible e integración en oleadas y pool.
+
+## Cierre con seis lugares — 2026-11-13
+
+Se conservan personajes, Pelota y las recompensas de los tres lugares originales. Main añade Mural del barrio, Ronda de mate y Bicicletería con beneficios temporales; QuilomboManager reubica los ocho candidatos dentro de césped y valida el footprint completo. Valores, pruebas, reglas de récords nuevas y paquete Mac en **Docs/EntregaHoy.md**. El Patovica sigue pendiente; no forma parte de este cierre.

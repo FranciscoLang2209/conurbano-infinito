@@ -26,3 +26,4 @@ MonoBehaviour:
   bossRepeatSeconds: 240
   maximumGems: 256
   maximumProjectiles: 256
+  rulesetVersion: entrega-pois-2

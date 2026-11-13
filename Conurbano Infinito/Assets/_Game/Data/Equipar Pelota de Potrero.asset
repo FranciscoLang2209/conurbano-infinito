@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
   stableId: upgrade.bdc5b8c3d13db4e36aec4672e222ac33
   displayName: Pelota de Potrero
-  description: Hasta 2 rebotes entre enemigos cercanos.
+  description: "2 rebotes de base entre enemigos cercanos."
   icon: {fileID: 0}
   maximumLevel: 1
   effect: 4

@@ -31,7 +31,7 @@ public sealed class CharacterData : ScriptableObject
     public int RicochetBonus => affinity == CharacterAffinity.Ricochet ? 1 : 0;
     public string AffinityDescription => affinity == CharacterAffinity.DirectProjectiles ?
         "+10% de daño: Termo y Boleadora." : affinity == CharacterAffinity.Ricochet ?
-        "+1 rebote: sólo armas Ricochet (Pelota)." : "Sin afinidad adicional.";
+        "+1 rebote con la Pelota de Potrero." : "Sin afinidad adicional.";
 
     private static CharacterData[] all;
     private static CharacterData selected;

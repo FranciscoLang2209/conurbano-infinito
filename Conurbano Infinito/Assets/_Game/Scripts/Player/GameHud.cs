@@ -8,6 +8,7 @@ public sealed class GameHud : MonoBehaviour
     [SerializeField] private QuilomboSystem quilombo;
 
     private WeaponController weapons;
+    private PlayerController player;
     private UpgradeSelection upgrades;
     private WaveDirector waves;
     private int lastPhase;
@@ -30,6 +31,7 @@ public sealed class GameHud : MonoBehaviour
     private void Awake()
     {
         if (playerHealth != null) weapons = playerHealth.GetComponent<WeaponController>();
+        if (playerHealth != null) player = playerHealth.GetComponent<PlayerController>();
         upgrades = GetComponent<UpgradeSelection>();
         waves = GetComponent<WaveDirector>();
         pointsOfInterest = FindObjectsByType<RiskZone>(FindObjectsSortMode.InstanceID);
@@ -234,7 +236,19 @@ public sealed class GameHud : MonoBehaviour
                 }
             }
         }
-        DrawPoiIndicators(Rect.MinMaxRect(left, top + 172, right, height - 158), new Vector2(width, GameUi.Height));
+        float benefitsY = top + 112;
+        if (gameManager.State == GameManager.GameState.Playing && (upgrades == null || !upgrades.IsShowing))
+        {
+            DrawBenefit(left, ref benefitsY, "Radio de XP", experience.CollectionBonusPercent, experience.CollectionBonusRemaining);
+            DrawBenefit(left, ref benefitsY, "Mural: daño", weapons.DamageBoostPercent, weapons.DamageBoostRemaining);
+            DrawBenefit(left, ref benefitsY, "Ataques: espera", -weapons.AttackBoostPercent, weapons.AttackBoostRemaining);
+            if (player != null) DrawBenefit(left, ref benefitsY, "Bici: movimiento", player.MovementBoostPercent, player.MovementBoostRemaining);
+            Rect poiArea = Rect.MinMaxRect(left, Mathf.Max(top + 172, benefitsY + 8), right, height - 158);
+            foreach (RiskZone zone in pointsOfInterest)
+                if (zone != null && zone.isActiveAndEnabled && zone.TryGetNoticePanel(out Rect notice))
+                    poiArea.yMax = Mathf.Min(poiArea.yMax, notice.yMin - 8);
+            DrawPoiIndicators(poiArea, new Vector2(width, GameUi.Height));
+        }
 
         Health boss = gameManager.BossHealth;
         if (boss != null && !boss.IsDead)
@@ -253,13 +267,21 @@ public sealed class GameHud : MonoBehaviour
         {
             GameUi.Panel(new Rect(right - 284, height - 92, 284, 34), GameUi.Gold);
             GameUi.Text(new Rect(right - 272, height - 90, 260, 30),
-                "Festejo listo · Petardo +25%", 16, GameUi.Cream, TextAnchor.MiddleCenter);
+                "Petardo: radio +25% listo", 16, GameUi.Cream, TextAnchor.MiddleCenter);
         }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (gameManager.IsFastForwarding)
-            GameUi.Text(new Rect(right - 240, height - 68, 240, 22), "DEV x10  ·  F9 NORMAL", 14, GameUi.Gold);
+            GameUi.Text(new Rect(right - 284, height - 78, 284, 22), "Práctica · Reloj ×10", 14, GameUi.Gold);
 #endif
         GameUi.End(previous);
+    }
+
+    private static void DrawBenefit(float x, ref float y, string label, float percent, float remaining)
+    {
+        if (remaining <= 0f) return;
+        GameUi.Fill(new Rect(x, y, 296, 28), new Color(0.09f, 0.14f, 0.17f, 0.9f));
+        GameUi.Text(new Rect(x + 8, y, 280, 28), $"{label} {percent:+0.#;-0.#;0}% · {remaining:0.0} s", 18, GameUi.Cream);
+        y += 30;
     }
 
     private void DrawPoiIndicators(Rect area, Vector2 screenSize)
@@ -285,6 +307,9 @@ public sealed class GameHud : MonoBehaviour
             GameUi.Text(new Rect(panel.x + 36f, panel.y + 6f, panel.width - 48f, 28f),
                 zone.DisplayName, 18, GameUi.Cream);
         }
+        // World names yield to the indicators laid out in this same GUI pass.
+        foreach (RiskZone zone in pointsOfInterest)
+            if (zone != null && zone.isActiveAndEnabled) zone.DrawWorldLabel(poiPanels, placed, area);
     }
 
     private static bool TryGetPoiPanel(Vector3 viewport, Vector2 screenSize, Rect area, out Rect panel)
@@ -316,6 +341,7 @@ public sealed class GameHud : MonoBehaviour
             Mathf.Approximately(panel.xMax, area.xMax);
         float origin = side ? panel.y : panel.x;
         float stepSize = (side ? panel.height : panel.width) + 6f;
+        for (int layer = 0; layer <= count; layer++)
         for (int step = 0; step <= count * 2; step++)
         {
             for (int sign = 0; sign < (step == 0 ? 1 : 2); sign++)
@@ -324,6 +350,10 @@ public sealed class GameHud : MonoBehaviour
                 float position = origin + step * stepSize * (sign == 0 ? 1 : -1);
                 if (side) candidate.y = Mathf.Clamp(position, area.yMin, area.yMax - panel.height);
                 else candidate.x = Mathf.Clamp(position, area.xMin, area.xMax - panel.width);
+                if (side) candidate.x = Mathf.Clamp(panel.x + layer * (panel.width + 6f) *
+                    (Mathf.Approximately(panel.xMin, area.xMin) ? 1 : -1), area.xMin, area.xMax - panel.width);
+                else candidate.y = Mathf.Clamp(panel.y + layer * (panel.height + 6f) *
+                    (Mathf.Approximately(panel.yMin, area.yMin) ? 1 : -1), area.yMin, area.yMax - panel.height);
                 bool free = true;
                 for (int i = 0; i < count; i++)
                 {
@@ -337,7 +367,7 @@ public sealed class GameHud : MonoBehaviour
                 if (free) return candidate;
             }
         }
-        // shortcut: tres POIs caben en los bordes actuales; agrupar si más zonas saturan el área.
+        // shortcut: six POIs fit in the checked areas; group indicators if the catalogue grows.
         return panel;
     }
 }

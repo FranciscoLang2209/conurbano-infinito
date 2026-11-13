@@ -10,6 +10,12 @@ public static class PoiIndicatorsCheck
     [MenuItem("Tools/Conurbano Infinito/Comprobar indicadores de POIs")]
     public static void Run()
     {
+        Rect label = new(454,190,232,34);
+        var reserved = new[] { new Rect(652,185,232,40) };
+        if (RiskZone.WorldLabelFits(label,reserved,1) || !RiskZone.WorldLabelFits(label,reserved,0) ||
+            !RiskZone.WorldLabelFits(new Rect(200,300,232,34),reserved,1) ||
+            RiskZone.WorldLabelFits(new Rect(415,185,232,34),reserved,1))
+            throw new Exception("World label did not yield to the active indicator and its clearance.");
         Vector2[] sizes = { new Vector2(1280, 720), new Vector2(1280, 960), new Vector2(1920, 720) };
         Vector3[] directions =
         {
@@ -36,6 +42,19 @@ public static class PoiIndicatorsCheck
                     .Invoke(null, new object[] { panel, new[] { panel }, 1, area });
                 if (panel.Overlaps(separated) || !Inside(separated, area))
                     throw new Exception("Dos POIs en el mismo borde se superponen o salen del área.");
+            }
+            foreach (Vector3 direction in directions)
+            {
+                var panels = new Rect[6];
+                for (int i = 0; i < panels.Length; i++)
+                {
+                    GetPanel(direction, size, area, out Rect preferred);
+                    panels[i] = (Rect)typeof(GameHud).GetMethod("SeparatePoiPanels", Flags)
+                        .Invoke(null, new object[] { preferred, panels, i, area });
+                    if (!Inside(panels[i], area)) throw new Exception("Six indicators escaped their area.");
+                    for (int j = 0; j < i; j++)
+                        if (panels[i].Overlaps(panels[j])) throw new Exception("Six indicators overlap.");
+                }
             }
             Vector3[] visible = { new Vector3(0.5f, 0.5f, 1), new Vector3(0, 0, 1),
                 new Vector3(1, 1, 1), new Vector3(2, 0.5f, -1) };
@@ -64,8 +83,8 @@ public static class PoiIndicatorsCheck
         {
             RiskZone[] zones = UnityEngine.Object.FindObjectsByType<RiskZone>(FindObjectsSortMode.None);
             GameHud hud = UnityEngine.Object.FindFirstObjectByType<GameHud>();
-            if (zones.Length != 3 || hud == null)
-                throw new Exception("Main debe tener HUD, Kiosco, Parrilla y Canchita.");
+            if (zones.Length != 6 || hud == null)
+                throw new Exception("Main debe tener HUD y seis POIs.");
             foreach (RiskZone zone in zones)
             {
                 Camera camera = new SerializedObject(zone).FindProperty("gameCamera")

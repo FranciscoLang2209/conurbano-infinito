@@ -17,6 +17,45 @@ public sealed class WeaponController : MonoBehaviour
     private Health health;
     private ObjectPool pool;
     private int enemyLayerMask;
+    private float appliedAttackFactor = 1f, appliedDamageBoost;
+    public float DamageBoostRemaining => Build.DamageBoost.Remaining;
+    public float AttackBoostRemaining => Build.AttackBoost.Remaining;
+    public float DamageBoostPercent => Build.DamageBoost.Value * 100f;
+    public float AttackBoostPercent => Build.AttackBoost.Value * 100f;
+
+    public void ApplyTemporaryDamage(float bonus, float duration)
+    {
+        Build.DamageBoost.Renew(bonus, duration);
+        RefreshTemporaryBonuses();
+    }
+
+    public void ApplyTemporaryAttack(float bonus, float duration)
+    {
+        Build.AttackBoost.Renew(bonus, duration);
+        RefreshTemporaryBonuses();
+    }
+
+    public void ClearTemporaryBonuses()
+    {
+        Build.DamageBoost = Build.AttackBoost = default;
+        RefreshTemporaryBonuses();
+    }
+
+    private void RefreshTemporaryBonuses()
+    {
+        float attackFactor = 1f - Build.AttackBoost.Value, damageBoost = Build.DamageBoost.Value;
+        if (attackFactor == appliedAttackFactor && damageBoost == appliedDamageBoost) return;
+        if (attackFactor != appliedAttackFactor)
+            foreach (EquippedWeapon item in equipped)
+            {
+                float previous = Mathf.Max(BuildRules.Current.MinimumAttackInterval,
+                    item.Data.FireInterval * Build.IntervalMultiplier * item.IntervalMultiplier * appliedAttackFactor);
+                item.NextAttackTime = Time.time + Mathf.Max(0f, item.NextAttackTime - Time.time) * GetInterval(item) / previous;
+            }
+        appliedAttackFactor = attackFactor;
+        appliedDamageBoost = damageBoost;
+        RefreshOrbitals();
+    }
 
     // Keep the original getters for the Termo and the existing hito checks.
     public int Damage => weapon == null ? 0 : Mathf.RoundToInt(GetDamage(FindWeapon(weapon)));
@@ -151,6 +190,7 @@ public sealed class WeaponController : MonoBehaviour
             return;
         }
 
+        RefreshTemporaryBonuses();
         foreach (EquippedWeapon item in equipped)
         {
             float previousInterval = GetInterval(item);
@@ -195,6 +235,7 @@ public sealed class WeaponController : MonoBehaviour
             return;
         }
 
+        RefreshTemporaryBonuses();
         float previousInterval = GetInterval(item);
         item.IntervalMultiplier *= multiplier;
         item.NextAttackTime = Time.time + Mathf.Max(0f, item.NextAttackTime - Time.time) * GetInterval(item) / previousInterval;
@@ -237,6 +278,7 @@ public sealed class WeaponController : MonoBehaviour
 
     private void Update()
     {
+        RefreshTemporaryBonuses();
         if (health.IsDead)
         {
             foreach (EquippedWeapon item in equipped) item.PulseCount = 0;

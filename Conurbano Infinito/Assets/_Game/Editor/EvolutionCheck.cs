@@ -168,6 +168,11 @@ public static class EvolutionCheck
         // Mate's counter is untouched by evolution or by the delayed second pulse.
         for (int attack = 1; attack <= 4; attack++)
         {
+            if (attack == 2)
+            {
+                weapons.ApplyTemporaryDamage(0.2f, 0.05f);
+                weapons.ApplyTemporaryAttack(0.15f, 0.05f);
+            }
             Projectile[] first = Fire(data, target);
             Require(first.Length == baseCount + (attack == 4 ? 1 : 0), "Mate counted a pulse as another attack.");
             float firstDamage = (float)Field(first[0], "damage");
@@ -195,6 +200,10 @@ public static class EvolutionCheck
             }
             await Until(() => (int)State(data).GetType().GetField("PulseCount").GetValue(State(data)) == 0);
             Projectile[] second = Object.FindObjectsByType<Projectile>(FindObjectsSortMode.None).Except(first).ToArray();
+            if (attack == 2)
+                Require(weapons.DamageBoostRemaining == 0 && weapons.AttackBoostRemaining == 0 &&
+                    first.All(p => Mathf.Approximately((float)Field(p, "damage"), firstDamage)),
+                    "Buff expiry changed emitted projectiles or advanced an evolved pulse.");
             Require(second.Length == baseCount && second.All(p => Mathf.Approximately((float)Field(p, "damage"), firstDamage * 0.5f)),
                 "Second pulse count/damage/snapshot.");
             Require(Time.time - firedAt >= 0.12f && Time.time - firedAt < 0.3f, "Pulse delay differs from active-time schedule.");

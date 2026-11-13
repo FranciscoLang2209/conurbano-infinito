@@ -4,12 +4,12 @@ internal static class BuildStatistics
 {
     // Damage stays fractional through Health; only the legacy integer getter rounds.
     public static float Damage(BuildState build, BuildState.Weapon weapon) =>
-        (weapon.Data.Damage + build.DamageBonus + weapon.DamageBonus) * (1f + build.DamagePercentBonus +
+        (weapon.Data.Damage + build.DamageBonus + weapon.DamageBonus) * (1f + build.DamagePercentBonus + build.DamageBoost.Value +
             (weapon.Data.DirectProjectile && build.Character != null ? build.Character.DirectProjectileDamageBonus : 0f));
 
     public static float Interval(BuildState build, BuildState.Weapon weapon) =>
         Mathf.Max(BuildRules.Current.MinimumAttackInterval,
-            weapon.Data.FireInterval * build.IntervalMultiplier * weapon.IntervalMultiplier);
+            weapon.Data.FireInterval * build.IntervalMultiplier * weapon.IntervalMultiplier * (1f - build.AttackBoost.Value));
 
     public static int ProjectileCount(BuildState build, BuildState.Weapon weapon) =>
         Mathf.Clamp(weapon.Data.ProjectileCount + weapon.ProjectileCountBonus +

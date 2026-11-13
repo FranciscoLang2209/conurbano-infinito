@@ -206,7 +206,7 @@ public sealed class UpgradeSelection : MonoBehaviour
 
         var panel = new Rect(GameUi.SafeArea.center.x - 472, GameUi.SafeArea.center.y - 266, 944, 532);
         GameUi.Sign(panel, GameUi.Petrol);
-        GameUi.Text(new Rect(panel.x + 22, panel.y + 14, 900, 44), "Elegí una mejora", 28,
+        GameUi.Text(new Rect(panel.x + 22, panel.y + 14, 900, 44), "Elegí cómo seguirla", 28,
             GameUi.Ink, TextAnchor.MiddleCenter);
         GameUi.Text(new Rect(panel.x + 22, panel.y + 60, 900, 30),
             $"Armas {weapon.EquippedWeaponCount}/4 · Pasivas {SelectedPassives.Count}/4 · 1 / 2 / 3 · Mouse · Flechas y Enter",
@@ -228,22 +228,22 @@ public sealed class UpgradeSelection : MonoBehaviour
                 GameUi.Icon(upgrade == null ? "heart" : GameUi.UpgradeIcon(upgrade.Effect), new Rect(face.x + 120, face.y + 35, 48, 48));
             int level = upgrade == null ? 0 : GetLevel(upgrade);
             GameUi.Text(new Rect(face.x + 24, face.y + 106, 240, 96),
-                upgrade != null ? upgrade.DisplayName : health.IsFull ? "Continuar" : "Recuperar vida",
+                upgrade != null ? upgrade.DisplayName : health.IsFull ? "Seguir jugando" : "Recuperar vida",
                 24, GameUi.Ink, TextAnchor.MiddleCenter, true);
             GameUi.Fill(new Rect(face.x + 24, face.y + 212, 240, 1), GameUi.Petrol);
-            GameUi.Text(new Rect(face.x + 24, face.y + 230, 240, 88),
-                upgrade != null ? upgrade.Description : health.IsFull ? "Vida llena. Seguís sin recompensa." :
+            GameUi.Text(new Rect(face.x + 24, face.y + 222, 240, 112),
+                upgrade != null ? upgrade.Description : health.IsFull ? "Ya tenés toda la vida. No quedan mejoras disponibles." :
                     $"Curás hasta {FallbackHealing} de vida. No quedan mejoras disponibles.",
                 20, GameUi.Ink, TextAnchor.UpperCenter, true);
-            string action = upgrade == null ? "Catálogo agotado" : upgrade.IsPassive ?
+            string action = upgrade == null ? "Seguí con tu equipo" : upgrade.IsPassive ?
                 (level == 0 ? "Adquirir pasiva" : "Mejorar pasiva") :
                 upgrade.Effect == UpgradeEffect.EvolveWeapon ? "Evolucionar arma · 8/8" :
                 $"{(upgrade.Effect == UpgradeEffect.EquipWeapon ? "Adquirir" : "Mejorar")} arma · {(upgrade.Effect == UpgradeEffect.EquipWeapon ? 1 : weapon.GetWeaponLevel(upgrade.TargetWeapon) + 1)}/{BuildRules.Current.MaximumWeaponLevel}";
-            GameUi.Text(new Rect(face.x + 24, face.y + 324, 240, 28), action,
+            GameUi.Text(new Rect(face.x + 24, face.y + 338, 240, 28), action,
                 18, GameUi.Petrol, TextAnchor.MiddleCenter);
-            GameUi.Tag(new Rect(face.x + 24, face.y + 360, 164, 30),
+            GameUi.Tag(new Rect(face.x + 24, face.y + 372, 164, 30),
                 upgrade == null ? "Sin mejoras" : $"{(upgrade.IsPassive ? "Nivel" : "Rango")} {level + 1}/{upgrade.MaximumLevel}", GameUi.Gold);
-            GameUi.Key(new Rect(face.x + 222, face.y + 360, 42, 30), (i + 1).ToString());
+            GameUi.Key(new Rect(face.x + 222, face.y + 372, 42, 30), (i + 1).ToString());
             if (GUI.Button(card, GUIContent.none, GUIStyle.none))
             {
                 Select(i);

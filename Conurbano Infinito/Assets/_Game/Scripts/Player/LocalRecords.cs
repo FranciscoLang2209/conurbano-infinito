@@ -94,13 +94,11 @@ public sealed class StoredRun
         lines.Add($"Lugares: {poiCount} · {GameManager.FormatCentipoints(poiCentipoints)} pt");
         lines.Add($"Tiempo: {activeSeconds:0.0} s · {survivalCentipoints / 100} pt");
         lines.Add($"Quilombo final: {finalQuilombo:0.#}");
-        lines.Add("Cierre: " + (endReason == GameManager.GameState.Victory ? "Victoria" : endReason == GameManager.GameState.Defeat ? "Derrota" : "Abandono"));
-        lines.Add(isRecordEligible ? "Elegible para récord local" : "Sin récord: " + (string.IsNullOrEmpty(practiceReason) ? "Abandono" : practiceReason));
-        lines.Add("Reglas: " + rulesetVersion);
-        lines.Add("Build: " + buildVersion);
-        lines.Add("Inicio UTC: " + startedUtc);
-        lines.Add("Personaje ID: " + characterId);
-        lines.Add("Run ID: " + runId);
+        lines.Add("Resultado: " + (endReason == GameManager.GameState.Victory ? "¡El barrio aguantó!" : endReason == GameManager.GameState.Defeat ? "Hasta acá llegamos" : "Dejaste la partida"));
+        lines.Add(isRecordEligible ? "Cuenta para el récord local" : string.IsNullOrEmpty(practiceReason) ? "Esta partida no cuenta para los récords" : "Partida de práctica: no cuenta para los récords");
+        lines.Add("Reglas: " + RunRules.RulesetName(rulesetVersion));
+        lines.Add("Versión del juego: " + buildVersion);
+        lines.Add("Personaje: " + (CharacterData.All.FirstOrDefault(c => c.StableId == characterId)?.DisplayName ?? "Personaje anterior"));
         return string.Join("\n", lines).Split('\n');
     }
 }
@@ -133,19 +131,34 @@ public sealed class LocalRecords
             if (File.Exists(path))
             {
                 try { data = Read(path); return; }
-                catch (NotSupportedException) { readOnly = true; Notice = "Formato de récords incompatible; archivo conservado."; return; }
-                catch (Exception e) when (IsFileError(e)) { damaged = true; }
+                catch (NotSupportedException e)
+                {
+                    Debug.LogWarning($"LocalRecords: formato no compatible en {path}: {e}");
+                    readOnly = true; Notice = "No se pueden abrir estos récords. Conservamos el archivo."; return;
+                }
+                catch (Exception e) when (IsFileError(e))
+                {
+                    Debug.LogWarning($"LocalRecords: no se pudo leer {path}: {e}");
+                    damaged = true;
+                }
             }
             if (File.Exists(path + ".bak"))
             {
                 data = Read(path + ".bak"); recovered = true;
                 Notice = "Récords recuperados del respaldo.";
             }
-            else if (damaged) Notice = "Archivo dañado; se conserva antes del próximo guardado.";
+            else if (damaged) Notice = "No se pudieron leer los récords. Podés seguir jugando.";
         }
-        catch (NotSupportedException) { readOnly = true; Notice = "Respaldo incompatible; archivos conservados."; }
+        catch (NotSupportedException e)
+        {
+            Debug.LogWarning($"LocalRecords: formato de respaldo no compatible en {path}.bak: {e}");
+            readOnly = true; Notice = "No se puede abrir el respaldo. Conservamos los archivos.";
+        }
         catch (Exception e) when (IsFileError(e))
-        { Notice = "No se pudieron leer los récords; archivos conservados."; damaged = true; }
+        {
+            Debug.LogWarning($"LocalRecords: no se pudieron leer los récords de {path}: {e}");
+            Notice = "No se pudieron leer los récords. Podés seguir jugando."; damaged = true;
+        }
     }
 
     private static bool IsFileError(Exception e) => e is IOException || e is UnauthorizedAccessException || e is ArgumentException || e is NotSupportedException || e is System.Security.SecurityException;
@@ -180,7 +193,11 @@ public sealed class LocalRecords
         if (readOnly) return false;
         if (data.registeredRunIds.Contains(result.RunId)) return true;
         StoredRun stored = StoredRun.FromResult(result);
-        if (!stored.IsValid()) { Notice = "Resultado inválido; no se guardó."; return false; }
+        if (!stored.IsValid())
+        {
+            Debug.LogWarning($"LocalRecords: resultado inválido, runId={result.RunId}");
+            Notice = "No se pudo guardar esta partida. Podés jugar otra vuelta."; return false;
+        }
         var next = new SaveData { schemaVersion = 1, lastResult = stored, records = new List<StoredRun>(data.records), registeredRunIds = new List<string>(data.registeredRunIds) { stored.runId } };
         if (stored.isRecordEligible) next.records.Add(stored);
         next.records = next.records.GroupBy(r => (r.modeId, r.rulesetVersion)).SelectMany(g => Order(g).Take(20)).ToList();
@@ -205,6 +222,9 @@ public sealed class LocalRecords
             return true;
         }
         catch (Exception e) when (IsFileError(e))
-        { Notice = "No se pudo guardar el resultado en este equipo."; return false; }
+        {
+            Debug.LogWarning($"LocalRecords: no se pudo guardar en {path}: {e}");
+            Notice = "No se pudo guardar esta partida. Podés jugar otra vuelta."; return false;
+        }
     }
 }

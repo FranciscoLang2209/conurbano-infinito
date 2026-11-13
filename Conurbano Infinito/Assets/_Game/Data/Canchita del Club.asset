@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Canchita del Club
   m_EditorClassIdentifier: Assembly-CSharp::RiskZoneData
   displayName: Canchita del Club
-  completionMessage: "\xA1TERCER TIEMPO!"
+  completionMessage: "¡Tercer tiempo!"
   requiredDuration: 6
   quilomboReward: 10
   damageMultiplier: 1

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
   stableId: evolution.termo-acero
   displayName: Termo de Acero Inoxidable
-  description: "2 pulsos a 0,12 s. Segundo al 50%. Mate sólo en el primero."
+  description: "2 pulsos a 0,12 s. Segundo al 50% de daño. Mate suma al primero."
   icon: {fileID: 0}
   maximumLevel: 1
   effect: 13

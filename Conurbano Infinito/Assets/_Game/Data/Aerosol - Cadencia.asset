@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
   stableId: upgrade.c207babe1d1344dd28e36229331e663a
   displayName: "Aerosol \xB7 Cadencia"
-  description: "10% menos de intervalo entre r\xE1fagas."
+  description: "10% menos espera entre ráfagas."
   icon: {fileID: 21300000, guid: 683a1f8dc2cc04f9dbe35c63050cce29, type: 3}
   maximumLevel: 3
   effect: 6

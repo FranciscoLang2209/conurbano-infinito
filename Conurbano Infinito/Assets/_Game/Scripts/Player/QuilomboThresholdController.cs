@@ -40,7 +40,7 @@ public sealed class QuilomboThresholdController : MonoBehaviour
         {
             reached25 = true;
             waves.SetQuilomboThresholdBonus(0.35f, false);
-            hud.ShowQuilomboFeedback("Se está yendo todo al carajo");
+            hud.ShowQuilomboFeedback("Se picó la plaza: llegan más enemigos");
         }
     }
 }

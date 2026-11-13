@@ -205,6 +205,9 @@ public sealed class Projectile : MonoBehaviour
     public void SetOrbitStats(float projectileDamage, float hitInterval, float degreesPerSecond)
     {
         damage = projectileDamage;
+        if (orbitInterval > 0f && hitInterval != orbitInterval)
+            foreach (Health target in new List<Health>(nextOrbitHit.Keys))
+                nextOrbitHit[target] = Time.time + Mathf.Max(0f, nextOrbitHit[target] - Time.time) * hitInterval / orbitInterval;
         orbitInterval = hitInterval;
         speed = degreesPerSecond;
     }

@@ -61,8 +61,6 @@ public static class QuilomboSliceCheck
         var placementFields = new SerializedObject(placement);
         SerializedProperty points = placementFields.FindProperty("spawnPoints");
         SerializedProperty elements = placementFields.FindProperty("elements");
-        float playerDistance = placementFields.FindProperty("minimumPlayerDistance").floatValue;
-        float elementDistance = placementFields.FindProperty("minimumElementDistance").floatValue;
         if (points.arraySize < 8 ||
             placementFields.FindProperty("playerSpawn").objectReferenceValue != player.transform ||
             elements.arraySize < 2 ||
@@ -70,26 +68,7 @@ public static class QuilomboSliceCheck
             elements.GetArrayElementAtIndex(1).objectReferenceValue != kiosk)
             throw new Exception("QuilomboManager no tiene los puntos, el jugador o los elementos configurados.");
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
-        for (int run = 0; run < 20; run++)
-        {
-            typeof(QuilomboManager).GetMethod("Start", flags).Invoke(placement, null);
-            if (Vector2.Distance(zone.transform.position, player.transform.position) < playerDistance ||
-                Vector2.Distance(kiosk.transform.position, player.transform.position) < playerDistance ||
-                Vector2.Distance(zone.transform.position, kiosk.transform.position) < elementDistance)
-                throw new Exception("Las zonas no respetan las distancias mínimas.");
-
-            bool zoneOnPoint = false;
-            bool kioskOnPoint = false;
-            for (int i = 0; i < points.arraySize; i++)
-            {
-                Transform point = points.GetArrayElementAtIndex(i).objectReferenceValue as Transform;
-                if (point == null) throw new Exception("Hay un spawn point vacío.");
-                zoneOnPoint |= Vector2.Distance(zone.transform.position, point.position) < 0.01f;
-                kioskOnPoint |= Vector2.Distance(kiosk.transform.position, point.position) < 0.01f;
-            }
-            if (!zoneOnPoint || !kioskOnPoint || zone.transform.position == kiosk.transform.position)
-                throw new Exception("Las zonas no quedaron en puntos distintos.");
-        }
+        PitchCheck.CheckPlacementSeeds();
 
         var zoneFields = new SerializedObject(zone);
         RiskZoneData data = zoneFields.FindProperty("data").objectReferenceValue as RiskZoneData;
@@ -153,7 +132,7 @@ public static class QuilomboSliceCheck
             throw new Exception("El Kiosco se activó dos veces o volvió a mostrar su indicador.");
         if ((float)typeof(WaveDirector).GetField("quilomboThresholdBonus", flags).GetValue(waves) != 0.35f ||
             (bool)typeof(WaveDirector).GetField("elitesEnabled", flags).GetValue(waves) ||
-            (string)typeof(GameHud).GetField("queuedFeedback", flags).GetValue(hud) != "Se está yendo todo al carajo")
+            (string)typeof(GameHud).GetField("queuedFeedback", flags).GetValue(hud) != "Se picó la plaza: llegan más enemigos")
             throw new Exception("Las dos zonas no activaron el umbral de 25 sin élites.");
         typeof(GameHud).GetField("queuedFeedback", flags).SetValue(hud, null);
         quilombo.Remove(10f);

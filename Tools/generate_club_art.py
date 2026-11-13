@@ -89,6 +89,55 @@ def canchita():
     return c
 
 
+def delivery_pois():
+    """Only the three new delivery landmarks; leave all existing artwork untouched."""
+    for name in ('MuralDelBarrio', 'RondaDeMate', 'Bicicleteria'):
+        c = Canvas(96)
+        c.ellipse(48, 65, 42, 20, 'grass_dark')
+        if name == 'MuralDelBarrio':
+            c.rect(10, 18, 85, 66, 'ink')
+            c.rect(13, 21, 82, 63, 'concrete')
+            for y in (30, 44, 58):
+                c.line(13, y, 82, y, 'pavement')
+            c.poly([(22, 51), (36, 27), (48, 49), (62, 28), (75, 54)], 'blue')
+            c.ellipse(48, 33, 7, 7, 'yellow')
+            c.rect(19, 56, 76, 59, 'red')
+            c.rect(67, 68, 73, 76, 'blue_dark')
+        elif name == 'RondaDeMate':
+            for x in (16, 72):
+                c.rect(x, 42, x+9, 71, 'ink')
+                c.rect(x+1, 44, x+8, 64, 'ochre')
+            c.ellipse(48, 53, 24, 15, 'ink')
+            c.ellipse(48, 50, 21, 12, 'ochre')
+            c.rect(37, 25, 46, 49, 'ink')
+            c.rect(39, 27, 44, 47, 'cream')
+            c.rect(39, 23, 45, 28, 'red')
+            c.ellipse(58, 43, 7, 8, 'ink')
+            c.ellipse(58, 41, 5, 5, 'grass')
+            c.line(59, 39, 65, 27, 'cream')
+        else:
+            for x in (23, 73):
+                c.ellipse(x, 59, 16, 16, 'ink')
+                c.ellipse(x, 59, 13, 13, 'concrete')
+                c.ellipse(x, 59, 11, 11, 'grass_dark')
+            for a, b in (((23,59),(38,36)), ((38,36),(52,59)), ((52,59),(23,59)),
+                         ((38,36),(62,36)), ((62,36),(52,59)), ((62,36),(73,59))):
+                c.line(*a, *b, 'yellow')
+            c.line(35, 32, 46, 32, 'ink')
+            c.line(62, 36, 66, 27, 'cream')
+            c.line(66, 27, 75, 27, 'cream')
+            c.rect(10, 14, 31, 23, 'blue_dark')
+            c.line(14, 18, 27, 18, 'cream')
+        for y in range(96):
+            for x in range(96):
+                radius = (x-48)**2 + (y-50)**2
+                if 39**2 <= radius <= 41**2 and ((x+y)//3)%2 == 0:
+                    c.dot(x, y, 'yellow')
+        assert {a for row in c.pixels for a in row[3::4]} == {0, 255}
+        assert not any(c.pixels[0][3::4]) and not any(c.pixels[-1][3::4])
+        c.save(ART / ('Environment/' + name + '.png'))
+
+
 def main():
     # La Piba's edited PNGs are authoritative; do not overwrite them with the retired procedural design.
     portraits = ART.parents[1] / 'Resources/CharacterPortraits'

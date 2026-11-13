@@ -101,7 +101,7 @@ public static class UiRedesignCheck
                 "Missing native object icon: " + name);
         }
         Font font = Resources.Load<Font>("BarrioUi/AtkinsonHyperlegible-Regular");
-        const string spanish = "áéíóúüñÁÉÍÓÚÜÑ¿¡";
+        const string spanish = "áéíóúüñÁÉÍÓÚÜÑ¿¡·%+−×–—";
         font.RequestCharactersInTexture(spanish, 24);
         foreach (char c in spanish) Require(font.HasCharacter(c), "Missing Spanish glyph: " + c);
         Font bold = Resources.Load<Font>("BarrioUi/AtkinsonHyperlegible-Bold");
@@ -339,7 +339,7 @@ public static class UiRedesignCheck
     {
         var options = (System.Collections.Generic.List<UpgradeData>)selection.Options;
         UpgradeData[] original = options.ToArray();
-        UpgradeData[] all = AssetDatabase.FindAssets("t:UpgradeData", new[] { "Assets/_Game/Data" })
+        UpgradeData[] all = AssetDatabase.FindAssets("t:UpgradeData", new[] { "Assets/_Game/Data", "Assets/_Game/Resources/Evolutions" })
             .Select(id => AssetDatabase.LoadAssetAtPath<UpgradeData>(AssetDatabase.GUIDToAssetPath(id))).ToArray();
         foreach (var size in new[] { new Vector2Int(1280, 720), new Vector2Int(1024, 768),
             new Vector2Int(1920, 1080), new Vector2Int(2560, 1080) })
@@ -349,8 +349,15 @@ public static class UiRedesignCheck
             {
                 options.Clear();
                 options.AddRange(all.Skip(start).Take(3));
-                await Task.Delay(150);
+                await Capture("mejoras-todas-" + start + "-" + size.x + "x" + size.y);
             }
+            options.Clear();
+            await Capture("mejoras-sin-opciones-" + size.x + "x" + size.y);
+            var health = Object.FindFirstObjectByType<PlayerController>().GetComponent<Health>();
+            float current = (float)Field(health, "remainingHealth");
+            health.Heal(health.MaximumHealth);
+            await Capture("mejoras-vida-llena-" + size.x + "x" + size.y);
+            typeof(Health).GetField("remainingHealth", Flags).SetValue(health, current);
         }
         options.Clear();
         options.AddRange(original);

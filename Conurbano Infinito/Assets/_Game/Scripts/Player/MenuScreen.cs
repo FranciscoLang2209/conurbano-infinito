@@ -142,8 +142,8 @@ public sealed class MenuScreen : MonoBehaviour
             0, 1, GUIStyle.none, volumeThumb);
         GUI.color = previousColor;
         if (!Mathf.Approximately(volume, audioDirector.MasterVolume)) audioDirector.MasterVolume = volume;
-        GameUi.Text(new Rect(x, panel.y + 468, 376, 82),
-            "WASD / flechas · Ataque automático\nEsc: pausa · Mejoras: 1 / 2 / 3\nFlechas / Tab y Enter para navegar", 17,
+        GameUi.Text(new Rect(x, panel.y + 448, 376, 100),
+            "Movete con WASD / flechas\nEl ataque es automático\nEsc: pausa · Mejoras: 1 / 2 / 3\nFlechas / Tab y Enter para navegar", 17,
             GameUi.Petrol, TextAnchor.UpperLeft);
         GameUi.End(previous);
     }
@@ -178,7 +178,7 @@ public sealed class MenuScreen : MonoBehaviour
             if (characterFocus == i)
             {
                 GameUi.FocusPointer(new Rect(card.x + 24, card.y + 151, 26, 26));
-                GameUi.Text(new Rect(card.x + 56, card.y + 152, 90, 24), "Foco", 16, GameUi.Cream);
+                GameUi.Text(new Rect(card.x + 56, card.y + 152, 90, 24), "Elegí", 16, GameUi.Cream);
             }
             GameUi.Text(new Rect(card.x + 16, card.y + 206, 440, 40), character.DisplayName, 30,
                 GameUi.Ink, TextAnchor.MiddleCenter);

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
   stableId: upgrade.2c8872a66d9b4211b470946a33b393d1
   displayName: Chancleta Teledirigida · Cadencia
-  description: -10% de intervalo de esta arma.
+  description: "10% menos espera entre chancletazos."
   icon: {fileID: 0}
   maximumLevel: 3
   effect: 6

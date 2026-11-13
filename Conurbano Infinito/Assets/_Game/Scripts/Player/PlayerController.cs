@@ -8,7 +8,12 @@ public sealed class PlayerController : MonoBehaviour
     [SerializeField, Min(0f)] private float movementSpeed = 5f;
 
     private float movementMultiplier = 1f;
-    public float MovementSpeed => BuildStatistics.MovementSpeed(movementSpeed, movementMultiplier);
+    private TimedBonus movementBoost;
+    public float MovementBoostRemaining => movementBoost.Remaining;
+    public float MovementBoostPercent => movementBoost.Value * 100f;
+    public float MovementSpeed => BuildStatistics.MovementSpeed(movementSpeed, movementMultiplier * (1f + movementBoost.Value));
+    public void ApplyTemporaryMovement(float bonus, float duration) => movementBoost.Renew(bonus, duration);
+    public void ClearTemporaryMovement() => movementBoost = default;
     public CharacterData Character { get; private set; }
 
     public void IncreaseMovementSpeed(float multiplier)

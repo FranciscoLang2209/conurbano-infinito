@@ -33,4 +33,20 @@ internal sealed class BuildState
     public int DamageBonus;
     public float DamagePercentBonus;
     public float IntervalMultiplier = 1f;
+    public TimedBonus DamageBoost, AttackBoost;
+}
+
+internal struct TimedBonus
+{
+    private float bonus, until;
+    public float Remaining => UnityEngine.Mathf.Max(0f, until - UnityEngine.Time.time);
+    public float Value => Remaining > 0f ? bonus : 0f;
+
+    public void Renew(float value, float duration)
+    {
+        if (!(value > 0f && value < 1f) || !(duration > 0f) || float.IsInfinity(duration)) return;
+        // Renew the duration, retaining the stronger active effect; never stack intensity.
+        bonus = UnityEngine.Mathf.Max(Value, value);
+        until = UnityEngine.Time.time + duration;
+    }
 }

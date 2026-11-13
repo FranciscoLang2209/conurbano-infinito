@@ -286,6 +286,10 @@ public sealed class GameManager : MonoBehaviour
         resultBuildText = BuildResultText(Result);
         focusedAction = 0;
         State = reason;
+        playerWeapon.ClearTemporaryBonuses();
+        playerHealth.GetComponent<PlayerController>()?.ClearTemporaryMovement();
+        playerHealth.GetComponent<ExperienceSystem>()?.ClearTemporaryCollection();
+        if (scoreZones != null) foreach (RiskZone zone in scoreZones) if (zone != null) zone.CloseRun();
         StopGame();
         records = LocalRecords.OpenDefault();
         records.Save(Result);
@@ -333,12 +337,13 @@ public sealed class GameManager : MonoBehaviour
 
         float x = panel.x + 412;
         GameUi.Text(new Rect(x, panel.y + 28, 444, 25),
-            paused ? "Pausa · Bajá un cambio" : victory ? "Victoria · Cuatro minutos" : "Fin de partida",
+            paused ? "Pausa · Bajá un cambio" : victory ? "¡El barrio aguantó!" : "Hasta acá llegamos",
             18, GameUi.Petrol);
         GameUi.Text(new Rect(x, panel.y + 63, 444, 108),
             paused ? "Tomate un\nrespiro." : $"{Result?.Points ?? 0}\npuntos",
             paused ? 44 : 42, GameUi.Ink, TextAnchor.UpperLeft);
-        if (paused) GameUi.Text(new Rect(x, panel.y + 171, 438, 24), "Cuando quieras, seguimos.", 19, GameUi.Petrol);
+        if (paused) GameUi.Text(new Rect(x, panel.y + 176, 438, 54),
+            "Más Quilombo: más enemigos y más puntos por baja.", 18, GameUi.Petrol, TextAnchor.UpperLeft, true);
         else if (Result != null)
         {
             long enemies = 0;
@@ -346,9 +351,9 @@ public sealed class GameManager : MonoBehaviour
                 enemies = item.Centipoints > long.MaxValue - enemies ? long.MaxValue : enemies + item.Centipoints;
             GameUi.Text(new Rect(x, panel.y + 174, 438, 28), $"Bajas: {FormatCentipoints(enemies)} puntos", 18, GameUi.Petrol);
             GameUi.Text(new Rect(x, panel.y + 204, 438, 28),
-                $"Lugares: {Result.PoiCentipoints / 100} · Tiempo: {Result.SurvivalCentipoints / 100}", 18, GameUi.Petrol);
+                $"Lugares: {Result.PoiCentipoints / 100} pt · Tiempo: {Result.SurvivalCentipoints / 100} pt", 18, GameUi.Petrol);
             GameUi.Text(new Rect(x, panel.y + 234, 438, 28),
-                $"{Result.ActiveSeconds:0.0} s activos · Quilombo {Result.FinalQuilombo:0.#}", 18, GameUi.Petrol);
+                $"Jugaste {Result.ActiveSeconds:0.0} s · Quilombo {Result.FinalQuilombo:0.#}", 18, GameUi.Petrol);
         }
         if (!paused && Result != null)
         {
@@ -358,9 +363,9 @@ public sealed class GameManager : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             string label = !paused && i == 2 ? "Récords de este equipo" : paused && i == 0 ? "Seguir en la plaza" :
-                i == (paused ? 1 : 0) ? "Otra partida" : "Volver al menú";
+                i == (paused ? 1 : 0) ? "Otra vuelta" : "Volver al menú";
             string key = !paused && i == 2 ? "L" : paused && i == 0 ? "ESC" : i == (paused ? 1 : 0) ? "R" : "M";
-            if (!GameUi.Button(new Rect(x, panel.y + (paused ? 217 : 305) + i * 59, 438, 49), label, key,
+            if (!GameUi.Button(new Rect(x, panel.y + (paused ? 240 : 305) + i * 59, 438, 49), label, key,
                 focusedAction == i, i == 0)) continue;
             GameUi.End(previous);
             focusedAction = i;
@@ -368,9 +373,9 @@ public sealed class GameManager : MonoBehaviour
             GUIUtility.ExitGUI();
         }
         GameUi.Text(new Rect(x, panel.y + 477, 438, 26),
-            !paused && records.Notice != null ? "Guardado: revisar aviso en Récords" :
-            !paused && Result != null && Result.IsPractice ? "Práctica · no participa en récords" :
-            !paused && Result != null && !Result.IsRecordEligible ? "Abandono · sin récord" : "Flechas / Tab + Enter · Mouse", 16, GameUi.Petrol);
+            !paused && records.Notice != null ? "Hay un aviso de guardado en Récords" :
+            !paused && Result != null && Result.IsPractice ? "Partida de práctica: no cuenta para los récords" :
+            !paused && Result != null && !Result.IsRecordEligible ? "Dejaste la partida: no cuenta para los récords" : "Flechas / Tab + Enter · Mouse", 16, GameUi.Petrol);
         GameUi.End(previous);
     }
 
@@ -383,7 +388,7 @@ public sealed class GameManager : MonoBehaviour
 
     private void DrawResultBuild(Rect area)
     {
-        GameUi.Text(new Rect(area.x, area.y, area.width, 30), "La build de esta partida", 22, GameUi.Gold);
+        GameUi.Text(new Rect(area.x, area.y, area.width, 30), "Tu equipo de esta partida", 22, GameUi.Gold);
         RecordsView.DrawLines(new Rect(area.x, area.y + 42, area.width, area.height - 42), resultBuildText, ref firstResultLine);
     }
 
